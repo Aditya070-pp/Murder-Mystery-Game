@@ -197,7 +197,6 @@ interrogated_suspects = []   # LIST: Suspect IDs interrogated
 resolved_contradictions = [] # LIST: Tracks which contradictions the player has solved
 custom_notes = []            # LIST: Custom player notes
 visited_rooms = []           # LIST: Track visited rooms for thought monologues
-turns_left = 12              # Time limit
 detective_score = 0          # Score tracking points
 difficulty_level = "Beginner" # Dynamic difficulty state
 plot_twist_triggered = False  # Track if plot twist has occurred
@@ -280,13 +279,11 @@ def print_end_game_summary(success, reason=""):
         rank = "Sherlock Holmes Grade Master Sleuth 🧠🏆"
         
     status = "CASE SOLVED (SUCCESS)" if success else f"CASE UNSOLVED - {reason.upper()}"
-    time_spent = 12 - turns_left
     
     border = "┌" + "─" * 58 + "┐"
     print(f"{WHITE}{border}{RESET}")
     print(f"{WHITE}│{RESET}  {BOLD}Case Status:{RESET} {status.ljust(43)}{WHITE}│{RESET}")
     print(f"{WHITE}│{RESET}  {BOLD}Victim Name:{RESET} {victim_name.ljust(43)}{WHITE}│{RESET}")
-    print(f"{WHITE}│{RESET}  {BOLD}Hours Spent:{RESET} {f'{time_spent} hours'.ljust(43)}{WHITE}│{RESET}")
     print(f"{WHITE}│{RESET}  {BOLD}Clues Found:{RESET} {f'{len(collected_clue_ids)}/7 clues'.ljust(43)}{WHITE}│{RESET}")
     print(f"{WHITE}│{RESET}  {BOLD}Alibi Breaks:{RESET} {f'{len(resolved_contradictions)}/3 contradictions'.ljust(42)}{WHITE}│{RESET}")
     print(f"{WHITE}│{RESET}  {BOLD}Final Score:{RESET} {f'{detective_score} points'.ljust(43)}{WHITE}│{RESET}")
@@ -748,17 +745,25 @@ def print_welcome():
     """Prints the welcome screen and introduction."""
     print_banner("THE SECRET OF BLACKWOOD MANOR", BLUE)
     intro_text = (
-        f"Welcome, Detective! You have been called to Blackwood Manor.\n"
-        f"The victim is {BOLD}{victim_name}{RESET}, {victim_desc}.\n"
-        f"He was found dead in his private study!\n\n"
-        "Cause of death: Poisoned with Aconite, slipped into his whiskey glass.\n"
-        "You have exactly 12 hours (actions) before the chief inspector takes over.\n\n"
-        "GAME RULES:\n"
-        "- Search rooms to gather clues (+10 points each)\n"
-        "- Interrogate suspects (+5 points on first meet)\n"
-        "- Find hidden contradictions between alibis and clues (+20 points each)\n\n"
-        "As your score increases, the difficulty will scale from Beginner -> Intermediate -> Advanced!\n"
-        "To win, you must accuse the correct suspect, naming the exact weapon and the key proof."
+        f"Welcome, Detective! You have been called to Blackwood Manor.\n\n"
+        f"🎬 THE CASE FILE: A Stormy Night at Blackwood Manor\n"
+        f"--------------------------------------------------\n"
+        f"The grandfather clock struck 9:00 PM on a rain-swept night, its chimes drowned out by the "
+        f"thunder shaking the heavy windows of Blackwood Manor. Seconds later, a chilling scream "
+        f"echoed from the private Study. {victim_name}, {victim_desc}, "
+        f"was found slumped lifelessly over his mahogany desk. The room was locked from the inside. "
+        f"On the desk sat a half-empty glass of crystal whiskey, emitting the faint, sweet scent "
+        f"of bitter almonds... Aconite poison, the silent killer.\n\n"
+        f"Three suspects remain in the manor, each hiding behind convenient alibis. You have stepped "
+        f"through the doors as the lead investigator. Solve the murder before the storm passes!\n\n"
+        f"🕵️‍♂️ DETECTIVE FIELD GUIDE:\n"
+        f"- Move between rooms using navigate options.\n"
+        f"- Search rooms to discover clues (+10 points each).\n"
+        f"- Interrogate suspects about alibis, motives, and clues (+5 points on first meet).\n"
+        f"- Match clues to suspect lies to break alibis (+20 points each).\n"
+        f"- Accuse the correct Killer, Weapon, and Proof in the Accusation Chamber.\n"
+        f"  ⚠️ CAUTION: Wrong accusations cost -10 points (if you have enough points)!\n\n"
+        f"As your score increases, the difficulty will scale from Beginner -> Intermediate -> Advanced."
     )
     print_wrapped(intro_text)
     input(f"\n{YELLOW}Press Enter to start your investigation...{RESET}")
@@ -841,9 +846,8 @@ def show_status():
         bar_empty = "░" * (20 - filled)
         progress_str = f"{BOLD}Rank:{RESET} {YELLOW}{current_rank}{RESET} | [{GREEN}{bar_filled}{RESET}{WHITE}{bar_empty}{RESET}] ({detective_score}/{next_limit} to {next_rank})"
 
-    print(f"{BOLD}Score:{RESET} {GREEN}{detective_score} pts{RESET} | "
-          f"{BOLD}Difficulty:{RESET} {color}{difficulty_level}{RESET} | "
-          f"{BOLD}Hours Left:{RESET} {RED}{turns_left}h{RESET}")
+    print(f"  {BOLD}Detective Rank:{RESET} {color}{difficulty_level}{RESET} | "
+          f"{BOLD}Score:{RESET} {GREEN}{detective_score} pts{RESET}")
     print(progress_str)
     print("-" * 60)
     print_wrapped(room["description"])
@@ -883,8 +887,8 @@ def show_status():
         print()
 
 def move_room():
-    """Lets the player move to connected rooms. Costs 1 hour."""
-    global current_room, turns_left
+    """Lets the player move to connected rooms."""
+    global current_room
     room = ROOMS[current_room]
     
     # Draw Manor Map
@@ -895,10 +899,14 @@ def move_room():
     for idx, conn in enumerate(room["connections"], 1):
         conn_name = ROOMS[conn]["name"]
         options[str(idx)] = f"{conn_name}"
+    options["0"] = "Stay Here (Cancel)"
     draw_menu(options, "NAVIGATION MENU - SELECT DESTINATION")
         
     choice = input(f"\n{BOLD}Enter room number, name or ID:{RESET} ").strip().lower()
     
+    if choice == "0" or choice == "stay" or choice == "stay here" or choice == "cancel" or choice == "stay here (cancel)":
+        return
+
     target = None
     # 1. Check if selection is an option index number
     try:
@@ -917,26 +925,20 @@ def move_room():
             
     if target:
         current_room = target
-        turns_left -= 1
         clear_screen()
-        print(f"\n{GREEN}* You moved to the {ROOMS[current_room]['name']}. (1 hour passed) *{RESET}")
+        print_typewriter(f"\n{GREEN}* Travelling to {ROOMS[current_room]['name']}... *{RESET}")
     else:
         print(f"\n{RED}Error: That room is not connected here!{RESET}")
         input("\nPress Enter to continue...")
 
 def search_room():
-    """Searches the room for clues. Costs 1 hour (Beginner/Intermediate) or 2 hours (Advanced)."""
-    global turns_left, detective_score
+    """Searches the room for clues."""
+    global detective_score
     room = ROOMS[current_room]
     update_difficulty()
     
-    # Determine cost based on difficulty
-    search_cost = 2 if difficulty_level == "Advanced" else 1
-    
     clear_screen()
     print_banner(f"Searching {room['name']}...", YELLOW)
-    if difficulty_level == "Advanced":
-        print(f"{RED}{BOLD}Advanced Difficulty:{RESET} Due to police tape and patrols, searching takes {search_cost} hours.")
         
     print_typewriter("You examine the surroundings, searching cupboards, bookshelves, and bins...", 0.02)
     
@@ -977,20 +979,18 @@ def search_room():
     if not found_any:
         print(f"\n{WHITE}You search thoroughly but find no new clues here.{RESET}")
         
-    turns_left -= search_cost
     update_difficulty()
     
     if found_any and len(collected_clue_ids) >= 3 and not plot_twist_triggered:
-        print(f"\n{RED}{BOLD}* Search complete. ({search_cost} hour(s) passed) *{RESET}")
         input(f"\n{RED}{BOLD}Wait... you've found at least 3 clues! Press Enter as a sudden realization hits you...{RESET}")
         generate_plot_twist()
     else:
-        print(f"\n{YELLOW}* Search complete. ({search_cost} hour(s) passed) *{RESET}")
+        print(f"\n{GREEN}* Search complete. *{RESET}")
         input("\nPress Enter to continue...")
 
 def interrogate_suspect():
-    """Interrogation dialogue with suspect. Refuses secrets in Intermediate/Advanced. Hostile in Advanced."""
-    global turns_left, detective_score
+    """Interrogates a suspect in the current room."""
+    global detective_score
     room = ROOMS[current_room]
     room_suspects = room["suspects"]
     update_difficulty()
@@ -1057,12 +1057,10 @@ def interrogate_suspect():
         for idx, (label, _) in enumerate(questions, 1):
             options[str(idx)] = label
         options["0"] = "Finish questioning"
-        draw_menu(options, f"QUESTIONING {suspect['name']}")
-        
-        print(f"\n{BOLD}Hours Left:{RESET} {turns_left}h")
+        draw_menu(options, f"CONFRONTING: {suspect['name'].upper()}")
         
         try:
-            choice = int(input(f"\n{BOLD}Select question number (costs 1 hour):{RESET} ").strip())
+            choice = int(input(f"\n{BOLD}Select question number:{RESET} ").strip())
         except ValueError:
             print(f"{RED}Invalid selection!{RESET}")
             time.sleep(1)
@@ -1075,9 +1073,6 @@ def interrogate_suspect():
             time.sleep(1)
             continue
             
-        # Deduct time
-        turns_left -= 1
-        
         question_label, dialogue_key = questions[choice - 1]
         
         # --- DIFFICULTY DYNAMICS ---
@@ -1144,11 +1139,6 @@ def interrogate_suspect():
         print_wrapped(response)
         print("-" * 60)
         
-        if turns_left <= 0:
-            print(f"\n{RED}You have run out of time during interrogation!{RESET}")
-            input("\nPress Enter to proceed...")
-            break
-            
         input("\nPress Enter to continue interrogation...")
 
 def view_clues():
@@ -1267,6 +1257,7 @@ def view_clues():
 
 def accuse_killer():
     """Accusation system. Requires correct suspect, weapon, and proof. Exits on execution."""
+    global detective_score
     clear_screen()
     print_banner("FINAL ACCUSATION", RED)
     print_wrapped(
@@ -1405,16 +1396,29 @@ def accuse_killer():
         else:
             print_wrapped(f"Your suspect laughs off your charges. 'You have no proof linking me to this!' Indeed, without the key proof, your case is circumstantial and dismissed.")
         print("-" * 60)
-        print_end_game_summary(success=False, reason="False Arrest")
-        input("\nPress Enter to exit the game...")
-        sys.exit(0)
+        
+        # Wrong accusation: deduct 10 points if enough points
+        deduct = 0
+        if detective_score >= 10:
+            detective_score -= 10
+            deduct = 10
+        else:
+            detective_score = 0
+            
+        update_difficulty()
+        if deduct > 0:
+            print(f"\n{RED}You lost {deduct} detective points. Keep investigating!{RESET}")
+        else:
+            print(f"\n{RED}Incorrect accusation. (You have 0 points, so no score was deducted). Keep investigating!{RESET}")
+        input("\nPress Enter to return to your investigation...")
+        return
 
 # ==============================================================================
 # 6. MAIN GAME LOOP
 # ==============================================================================
 
 def main():
-    global current_room, turns_left
+    global current_room
     
     # Enable ANSI escape characters on Windows consoles
     if os.name == 'nt':
@@ -1426,26 +1430,6 @@ def main():
     print_welcome()
     
     while True:
-        # Check game over timer
-        if turns_left <= 0:
-            clear_screen()
-            play_retro_chime("failure")
-            loss_outro = (
-                "================================================================================\n"
-                "                                 TIME IS UP!\n"
-                "================================================================================\n"
-                "The grandfather clock strikes midnight. The chief inspector arrives.\n"
-                "\"Detective Vance, your time is up. We are taking over the case.\"\n\n"
-                "Because of the delay, the killer managed to destroy the ledger and replace the poison vial.\n"
-                "The case remains cold, and the killer escapes justice.\n\n"
-                f"Final Detective Score: {detective_score} points.\n"
-                "GAME OVER - You ran out of actions!"
-                "================================================================================"
-            )
-            print_typewriter(loss_outro, 0.005)
-            print_end_game_summary(success=False, reason="Out of Time")
-            sys.exit(0)
-            
         show_status()
         
         options = {

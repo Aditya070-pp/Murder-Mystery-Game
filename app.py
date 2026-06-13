@@ -188,61 +188,63 @@ def render_study_diagram():
     <div style="
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
+        gap: 6px;
         background-color: transparent;
         padding: 5px;
         border: 1px solid {border};
         border-radius: 8px;
-        max-width: 600px;
+        max-width: 100%;
+        width: 100%;
         margin: 0 auto;
         font-family: 'Courier New', monospace;
         color: {text};
+        font-size: 10px;
     ">
         <!-- Row 0 -->
-        <div style="border: 1px solid {f_border}; background-color: {f_bg}; border-radius: 4px; padding: 10px; text-align: center;">
-            <strong>DESK</strong><br><span style="font-size: 9px; opacity: 0.8;">Mahogany</span>
+        <div style="border: 1px solid {f_border}; background-color: {f_bg}; border-radius: 4px; padding: 8px 2px; text-align: center; word-wrap: break-word;">
+            <strong>DESK</strong><br><span style="font-size: 8px; opacity: 0.8;">Mahogany</span>
         </div>
-        <div style="border: 2px solid {v_border}; background-color: {v_bg}; border-radius: 4px; padding: 10px; text-align: center; box-shadow: 0 0 5px {v_border};">
-            <strong>💀 BODY</strong><br><span style="font-size: 9px; opacity: 0.8; font-weight: bold;">Slumped</span>
+        <div style="border: 2px solid {v_border}; background-color: {v_bg}; border-radius: 4px; padding: 8px 2px; text-align: center; box-shadow: 0 0 5px {v_border}; word-wrap: break-word;">
+            <strong>💀 BODY</strong><br><span style="font-size: 8px; opacity: 0.8; font-weight: bold;">Slumped</span>
         </div>
-        <div style="border: 1px solid {e_border}; background-color: {e_bg}; border-radius: 4px; padding: 10px; text-align: center;">
-            <strong>🔍 GLASS</strong><br><span style="font-size: 9px; opacity: 0.8;">Whiskey</span>
+        <div style="border: 1px solid {e_border}; background-color: {e_bg}; border-radius: 4px; padding: 8px 2px; text-align: center; word-wrap: break-word;">
+            <strong>🔍 GLASS</strong><br><span style="font-size: 8px; opacity: 0.8;">Whiskey</span>
         </div>
-        <div style="border: 1px solid {e_border}; background-color: {e_bg}; border-radius: 4px; padding: 10px; text-align: center;">
-            <strong>📄 WILL</strong><br><span style="font-size: 9px; opacity: 0.8;">In Drawer</span>
+        <div style="border: 1px solid {e_border}; background-color: {e_bg}; border-radius: 4px; padding: 8px 2px; text-align: center; word-wrap: break-word;">
+            <strong>📄 WILL</strong><br><span style="font-size: 8px; opacity: 0.8;">Drawer</span>
         </div>
 
         <!-- Row 1 -->
-        <div style="border: 1px solid {f_border}; background-color: {f_bg}; border-radius: 4px; padding: 10px; text-align: center;">
-            <strong>SHELVES</strong><br><span style="font-size: 9px; opacity: 0.8;">Books</span>
+        <div style="border: 1px solid {f_border}; background-color: {f_bg}; border-radius: 4px; padding: 8px 2px; text-align: center; word-wrap: break-word;">
+            <strong>SHELVES</strong><br><span style="font-size: 8px; opacity: 0.8;">Books</span>
         </div>
-        <div style="border: 1px solid {f_border}; background-color: {f_bg}; border-radius: 4px; padding: 10px; text-align: center;">
-            <strong>CHAIR</strong><br><span style="font-size: 9px; opacity: 0.8;">Armchair</span>
+        <div style="border: 1px solid {f_border}; background-color: {f_bg}; border-radius: 4px; padding: 8px 2px; text-align: center; word-wrap: break-word;">
+            <strong>CHAIR</strong><br><span style="font-size: 8px; opacity: 0.8;">Armchair</span>
         </div>
-        <div style="border: 1px dashed {border}; border-radius: 4px; padding: 10px; text-align: center; opacity: 0.4;">
-            <strong>FLOOR</strong><br><span style="font-size: 9px; opacity: 0.8;">Carpet</span>
+        <div style="border: 1px dashed {border}; border-radius: 4px; padding: 8px 2px; text-align: center; opacity: 0.4; word-wrap: break-word;">
+            <strong>FLOOR</strong><br><span style="font-size: 8px; opacity: 0.8;">Carpet</span>
         </div>
-        <div style="border: 1px solid {e_border}; background-color: {e_bg}; border-radius: 4px; padding: 10px; text-align: center;">
-            <strong>💎 EARRING</strong><br><span style="font-size: 9px; opacity: 0.8;">Dropped</span>
+        <div style="border: 1px solid {e_border}; background-color: {e_bg}; border-radius: 4px; padding: 8px 2px; text-align: center; word-wrap: break-word;">
+            <strong>💎 PEARL</strong><br><span style="font-size: 8px; opacity: 0.8;">Earring</span>
         </div>
 
         <!-- Row 2 -->
-        <div style="border: 1px solid {f_border}; background-color: {f_bg}; border-radius: 4px; padding: 10px; text-align: center;">
-            <strong>FIREPLACE</strong><br><span style="font-size: 9px; opacity: 0.8;">Warm Hearth</span>
+        <div style="border: 1px solid {f_border}; background-color: {f_bg}; border-radius: 4px; padding: 8px 2px; text-align: center; word-wrap: break-word;">
+            <strong>FIREPLACE</strong><br><span style="font-size: 8px; opacity: 0.8;">Hearth</span>
         </div>
-        <div style="border: 1px solid {border}; border-radius: 4px; padding: 10px; text-align: center;">
-            <strong>🚪 DOOR</strong><br><span style="font-size: 9px; opacity: 0.8;">to Foyer</span>
+        <div style="border: 1px solid {border}; border-radius: 4px; padding: 8px 2px; text-align: center; word-wrap: break-word;">
+            <strong>🚪 DOOR</strong><br><span style="font-size: 8px; opacity: 0.8;">to Foyer</span>
         </div>
-        <div style="border: 1px solid {border}; border-radius: 4px; padding: 10px; text-align: center;">
-            <strong>🚪 DOOR</strong><br><span style="font-size: 9px; opacity: 0.8;">to Library</span>
+        <div style="border: 1px solid {border}; border-radius: 4px; padding: 8px 2px; text-align: center; word-wrap: break-word;">
+            <strong>🚪 DOOR</strong><br><span style="font-size: 8px; opacity: 0.8;">to Library</span>
         </div>
-        <div style="border: 1px dashed {border}; border-radius: 4px; padding: 10px; text-align: center; opacity: 0.4;">
-            <strong>WINDOW</strong><br><span style="font-size: 9px; opacity: 0.8;">Locked</span>
+        <div style="border: 1px dashed {border}; border-radius: 4px; padding: 8px 2px; text-align: center; opacity: 0.4; word-wrap: break-word;">
+            <strong>WINDOW</strong><br><span style="font-size: 8px; opacity: 0.8;">Locked</span>
         </div>
     </div>
     </body>
     """
-    st.components.v1.html(html, height=355)
+    st.components.v1.html(html, height=310)
 
 # --- DYNAMIC MANOR MAP (Theme-Synced Layout) ---
 def render_manor_map():
@@ -251,58 +253,74 @@ def render_manor_map():
     
     def get_style(room_id):
         if room_id == current:
-            bg = "#D4AF37" if theme == "dark" else "#8B0000"
-            color = "#121212" if theme == "dark" else "#FFFFFF"
-            border = "2px solid #FFFFFF"
-            glow = "box-shadow: 0 0 10px #D4AF37;"
+            fill = "#D4AF37" if theme == "dark" else "#8B0000"
+            stroke = "#FFFFFF"
+            stroke_width = "2"
+            text_color = "#121212" if theme == "dark" else "#FFFFFF"
         else:
-            bg = "#1E1E1E" if theme == "dark" else "#F5F2EB"
-            color = "#E0E0E0" if theme == "dark" else "#2C2C2C"
-            border = "1px solid #444444" if theme == "dark" else "1px solid #D3C2A0"
-            glow = ""
-        return f"background-color: {bg}; color: {color}; border: {border}; {glow}"
+            fill = "#1E1E1E" if theme == "dark" else "#F5F2EB"
+            stroke = "#444444" if theme == "dark" else "#D3C2A0"
+            stroke_width = "1"
+            text_color = "#E0E0E0" if theme == "dark" else "#2C2C2C"
+        return fill, stroke, stroke_width, text_color
 
     border_color = "#444444" if theme == "dark" else "#D3C2A0"
     line_color = "#D4AF37" if theme == "dark" else "#8B0000"
+    bg_svg = "transparent"
     
-    html = f"""
-    <body style="background-color: transparent; margin: 0; padding: 0; overflow: hidden;">
-    <div style="
-        position: relative;
-        width: 100%;
-        max-width: 500px;
-        height: 280px;
-        margin: 0 auto;
-        border: 1px solid {border_color};
-        border-radius: 8px;
-        background-color: transparent;
-        font-family: Arial, sans-serif;
-    ">
-        <!-- Connecting lines -->
-        <div style="position: absolute; top: 45px; left: 160px; width: 180px; height: 3px; background-color: {line_color}; z-index: 1;"></div>
-        <div style="position: absolute; top: 70px; left: 95px; width: 3px; height: 75px; background-color: {line_color}; z-index: 1;"></div>
-        <div style="position: absolute; top: 70px; left: 400px; width: 3px; height: 75px; background-color: {line_color}; z-index: 1;"></div>
-        <div style="position: absolute; top: 180px; left: 140px; width: 80px; height: 3px; background-color: {line_color}; z-index: 1;"></div>
-        <div style="position: absolute; top: 180px; left: 280px; width: 80px; height: 3px; background-color: {line_color}; z-index: 1;"></div>
-        <div style="position: absolute; top: 165px; left: 248px; width: 3px; height: 40px; background-color: {line_color}; z-index: 1;"></div>
+    # Study style
+    s_fill, s_stroke, s_sw, s_txt = get_style('study')
+    # Library style
+    lib_fill, lib_stroke, lib_sw, lib_txt = get_style('library')
+    # Foyer style
+    foy_fill, foy_stroke, foy_sw, foy_txt = get_style('foyer')
+    # Lounge style
+    lng_fill, lng_stroke, lng_sw, lng_txt = get_style('lounge')
+    # Conservatory style
+    con_fill, con_stroke, con_sw, con_txt = get_style('conservatory')
 
-        <!-- Room Nodes -->
-        <div style="position: absolute; top: 15px; left: 25px; width: 140px; height: 55px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; text-align: center; z-index: 2; font-size: 11px; {get_style('study')}">
-            STUDY<br><span style="font-size: 9px; font-weight: normal; opacity: 0.8;">(Crime Scene)</span>
-        </div>
-        <div style="position: absolute; top: 15px; left: 335px; width: 140px; height: 55px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; text-align: center; z-index: 2; font-size: 11px; {get_style('library')}">
-            LIBRARY
-        </div>
-        <div style="position: absolute; top: 110px; left: 180px; width: 140px; height: 55px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; text-align: center; z-index: 2; font-size: 11px; {get_style('foyer')}">
-            FOYER
-        </div>
-        <div style="position: absolute; top: 205px; left: 25px; width: 140px; height: 55px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; text-align: center; z-index: 2; font-size: 11px; {get_style('lounge')}">
-            LOUNGE
-        </div>
-        <div style="position: absolute; top: 205px; left: 335px; width: 140px; height: 55px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; text-align: center; z-index: 2; font-size: 11px; {get_style('conservatory')}">
-            CONSERVATORY
-        </div>
-    </div>
+    html = f"""
+    <body style="background-color: transparent; margin: 0; padding: 0; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+    <svg viewBox="0 0 500 280" style="width: 100%; max-width: 500px; height: auto; background-color: {bg_svg}; font-family: Arial, sans-serif; border: 1px solid {border_color}; border-radius: 8px;">
+        <!-- Connecting lines -->
+        <line x1="165" y1="42.5" x2="335" y2="42.5" stroke="{line_color}" stroke-width="3" />
+        <line x1="95" y1="70" x2="95" y2="145" stroke="{line_color}" stroke-width="3" />
+        <line x1="405" y1="70" x2="405" y2="145" stroke="{line_color}" stroke-width="3" />
+        <line x1="140" y1="180" x2="220" y2="180" stroke="{line_color}" stroke-width="3" />
+        <line x1="280" y1="180" x2="360" y2="180" stroke="{line_color}" stroke-width="3" />
+        <line x1="250" y1="165" x2="250" y2="205" stroke="{line_color}" stroke-width="3" />
+
+        <!-- Study Node -->
+        <g>
+            <rect x="25" y="15" width="140" height="55" rx="6" fill="{s_fill}" stroke="{s_stroke}" stroke-width="{s_sw}" />
+            <text x="95" y="40" fill="{s_txt}" font-weight="bold" font-size="11" text-anchor="middle">STUDY</text>
+            <text x="95" y="52" fill="{s_txt}" font-size="9" text-anchor="middle" opacity="0.8">(Crime Scene)</text>
+        </g>
+
+        <!-- Library Node -->
+        <g>
+            <rect x="335" y="15" width="140" height="55" rx="6" fill="{lib_fill}" stroke="{lib_stroke}" stroke-width="{lib_sw}" />
+            <text x="405" y="48" fill="{lib_txt}" font-weight="bold" font-size="11" text-anchor="middle">LIBRARY</text>
+        </g>
+
+        <!-- Foyer Node -->
+        <g>
+            <rect x="180" y="110" width="140" height="55" rx="6" fill="{foy_fill}" stroke="{foy_stroke}" stroke-width="{foy_sw}" />
+            <text x="250" y="143" fill="{foy_txt}" font-weight="bold" font-size="11" text-anchor="middle">FOYER</text>
+        </g>
+
+        <!-- Lounge Node -->
+        <g>
+            <rect x="25" y="205" width="140" height="55" rx="6" fill="{lng_fill}" stroke="{lng_stroke}" stroke-width="{lng_sw}" />
+            <text x="95" y="238" fill="{lng_txt}" font-weight="bold" font-size="11" text-anchor="middle">LOUNGE</text>
+        </g>
+
+        <!-- Conservatory Node -->
+        <g>
+            <rect x="335" y="205" width="140" height="55" rx="6" fill="{con_fill}" stroke="{con_stroke}" stroke-width="{con_sw}" />
+            <text x="405" y="238" fill="{con_txt}" font-weight="bold" font-size="11" text-anchor="middle">CONSERVATORY</text>
+        </g>
+    </svg>
     </body>
     """
     st.components.v1.html(html, height=290)
@@ -481,6 +499,42 @@ def generate_ai_plot_twist():
     except Exception:
         return None
 
+def trigger_plot_twist_event():
+    st.session_state.plot_twist_triggered = True
+    twist_data = generate_ai_plot_twist()
+    
+    if not twist_data:
+        default_twists = [
+            {
+                "type": "Secret Motive",
+                "title": "The Threatened Exposure Letter",
+                "description": "You discover a hidden lockbox in the Study containing a draft letter. Lord Harrington had discovered the killer's financial embezzlements and wrote that they would report them to the police the very next morning. This gave the killer an extremely urgent motive to commit the crime tonight!"
+            },
+            {
+                "type": "Hidden Witness",
+                "title": "The Silent Servant",
+                "description": "An aged maid, trembling with fear, pulls you aside in the hallway. She whispers that at exactly 9:15 PM, she saw someone creeping quietly towards the Study door wearing dark medical gloves and holding something concealed in their hand."
+            },
+            {
+                "type": "Fake Alibi",
+                "title": "The Frozen Pocketwatch",
+                "description": "You notice a shattered pocketwatch dropped near the foyer floorboards. The glass is crushed and the hands are frozen precisely at 8:45 PM. This physical timestamp completely contradicts one of the suspect's timeline statements!"
+            }
+        ]
+        victim_name = st.session_state.victim_name
+        # Customize victim name in description if default offline twist is used
+        for twist in default_twists:
+            twist["description"] = twist["description"].replace("Lord Harrington", victim_name)
+        
+        twist_data = random.choice(default_twists)
+    
+    st.session_state.plot_twist_data = twist_data
+    st.session_state.detective_score += 15
+    st.session_state.audio_trigger = "twist"
+    st.session_state.custom_notes += f"\n[PLOT TWIST - {twist_data['type']}] {twist_data['title']}: {twist_data['description']}"
+    st.session_state.feedback = f"PLOT TWIST TRIGGERED: {twist_data['title']} (+15 pts)"
+    update_difficulty()
+
 # --- STATE INITIALIZATION & RESET ---
 def init_game_state(force_reset=False, custom_api_key=""):
     if "initialized" not in st.session_state or not st.session_state.initialized or force_reset:
@@ -643,7 +697,7 @@ def init_game_state(force_reset=False, custom_api_key=""):
         st.session_state.interrogated_suspects = []
         st.session_state.resolved_contradictions = []
         st.session_state.custom_notes = ""
-        st.session_state.turns_left = 12
+        st.session_state.visited_rooms = ["foyer"]
         st.session_state.detective_score = 0
         st.session_state.difficulty_level = "Beginner"
         st.session_state.plot_twist_triggered = False
@@ -805,10 +859,9 @@ else:
 
 st.sidebar.divider()
 
-# Difficulty and Hours left
+# Difficulty
 diff_color = {"Beginner": "green", "Intermediate": "orange", "Advanced": "red"}[st.session_state.difficulty_level]
 st.sidebar.markdown(f"**Difficulty Level:** <span style='color:{diff_color}; font-weight:bold;'>{st.session_state.difficulty_level}</span>", unsafe_allow_html=True)
-st.sidebar.markdown(f"**Hours Left:** `{st.session_state.turns_left} hrs`")
 
 # Custom Case Notes Text Area
 st.sidebar.markdown("### 📓 Case Notes")
@@ -835,7 +888,20 @@ if st.sidebar.button("Restart Mystery (Regen Case)"):
 
 # 1. Header Banner
 st.markdown("<h1 style='text-align: center;'>🕵️‍♂️ The Secret of Blackwood Manor</h1>", unsafe_allow_html=True)
-st.markdown(f"<p style='text-align: center; font-style: italic; opacity: 0.8;'>You have been called to investigate the death of <strong>{st.session_state.victim_name}</strong>, {st.session_state.victim_desc}.</p>", unsafe_allow_html=True)
+st.markdown(f"""
+<div class="mystery-card" style="border-left: 5px solid #E74C3C; background-color: rgba(231, 76, 60, 0.05); padding: 15px 20px; border-radius: 6px; margin-bottom: 20px;">
+    <h3 style="margin-top: 0; color: #E74C3C !important; font-family: 'Georgia', serif;">🎬 The Case File: A Stormy Night at Blackwood Manor</h3>
+    <p style="font-size: 15px; line-height: 1.6; font-style: italic; font-family: 'Georgia', serif;">
+        "The grandfather clock struck 9:00 PM on a rain-swept night, its chimes drowned out by the thunder shaking the heavy windows of Blackwood Manor. 
+        Seconds later, a chilling scream echoed from the private Study. 
+        <strong>{st.session_state.victim_name}</strong>, {st.session_state.victim_desc}, was found slumped lifelessly over his mahogany desk. 
+        The room was locked from the inside. On the desk sat a half-empty glass of crystal whiskey, emitting the faint, sweet scent of bitter almonds... 
+        Aconite poison, the silent killer. 
+        Three suspects remain in the manor, each hiding behind convenient alibis. You have stepped through the doors as the lead investigator. 
+        Piece together the clues, cross-examine the suspects, expose their lies, and solve the murder before the storm passes and the killer escapes..."
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 # 2. Check Game Over state
 if st.session_state.game_over:
@@ -863,10 +929,6 @@ if st.session_state.game_over:
             <tr style="border-bottom: 1px solid #333; height: 35px;">
                 <td><strong>Victim Name:</strong></td>
                 <td style="text-align: right;">{st.session_state.victim_name}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #333; height: 35px;">
-                <td><strong>Hours Invested:</strong></td>
-                <td style="text-align: right;">{12 - st.session_state.turns_left} hours</td>
             </tr>
             <tr style="border-bottom: 1px solid #333; height: 35px;">
                 <td><strong>Clues Discovered:</strong></td>
@@ -910,262 +972,221 @@ if st.session_state.plot_twist_triggered and st.session_state.plot_twist_data:
     </div>
     """, unsafe_allow_html=True)
 
-# 5. Core Interface tabs
-tab_room, tab_crime, tab_suspects, tab_clues, tab_accuse = st.tabs([
-    "🔍 Investigation Room", 
-    "📁 Crime Scene Dossier", 
-    "👥 Suspect Dossiers", 
-    "🎒 Evidence Locker", 
-    "⚖️ Accusation Chamber"
-])
+# 5. Core Interface columns (Unified Single-page Dashboard)
+col_investigate, col_notebook = st.columns([1.1, 0.9])
 
-# --- TAB 1: CURRENT ROOM ---
-with tab_room:
+with col_investigate:
+    # Quick Investigator Guide
+    with st.expander("📖 Basic Guide: How to Play the Game", expanded=True):
+        st.markdown("""
+        ### 🕵️‍♂️ Detective Field Guide
+        Welcome to the investigation! Follow these basic steps to crack the case:
+        
+        1. **🧭 Explore the Manor**:
+           Look at the **Manor Map** and use the travel buttons at the bottom of the screen to move from room to room. Different suspects and clues are scattered across the manor.
+        
+        2. **🔍 Search for Evidence**:
+           Inside any room, click **"Search room for clues"** to scour the area. If you find any clues, they will be added to your **Evidence Locker** (under the Notebook on the right). Finding clues increases your score (+10 pts).
+        
+        3. **🗣️ Cross-Examine Suspects**:
+           If suspects are present in a room, click **"Interrogate"** to question them. You can ask them about their alibis, motives, or ask them about specific clues you have found.
+        
+        4. **🧩 Solve Alibi Contradictions (Crucial!)**:
+           Suspects will lie to cover their tracks. If you question a suspect about an item that disproves their alibi, you will break their alibi! This awards **+20 Detective Points** and unlocks their confession.
+        
+        5. **⚖️ Accuse the Suspect**:
+           Once you are confident, go to the **Accusation Chamber** on the right side. Select the correct **Killer**, the **Weapon**, and the **Embezzlement/Key Proof**. 
+           * **⚠️ CAUTION:** A wrong accusation is costly and will deduct **-10 Detective Points** (if you have enough points)!
+        """)
+
     room_id = st.session_state.current_room
     room = st.session_state.ROOMS[room_id]
     
     st.subheader(f"📍 Location: {room['name']}")
     st.markdown(f"*{room['description']}*")
     
-    col_room_actions, col_map = st.columns([1, 1])
+    st.markdown("### 🔎 Room Actions")
     
-    with col_room_actions:
-        st.markdown("### 🔎 Room Actions")
+    # Search room trigger
+    if st.button("Search room for clues", key="search_room_btn", use_container_width=True):
+        room_clues = room["clues"]
+        found_new = False
+        found_clues_list = []
         
-        search_cost = 2 if st.session_state.difficulty_level == "Advanced" else 1
-        btn_search_label = f"Search room for clues (costs {search_cost} hr(s))"
+        for c_id in room_clues:
+            if c_id not in st.session_state.collected_clue_ids:
+                st.session_state.collected_clue_ids.append(c_id)
+                st.session_state.clues_found.append(st.session_state.CLUES[c_id]["name"])
+                st.session_state.detective_score += 10
+                found_new = True
+                found_clues_list.append(st.session_state.CLUES[c_id]["name"])
+                
+        update_difficulty()
         
-        # Search room trigger
-        if st.button(btn_search_label, key="search_room_btn", use_container_width=True):
-            if st.session_state.turns_left < search_cost:
-                st.warning("Not enough time left to perform a search!")
-            else:
-                st.session_state.turns_left -= search_cost
-                room_clues = room["clues"]
-                found_new = False
-                found_clues_list = []
-                
-                for c_id in room_clues:
-                    if c_id not in st.session_state.collected_clue_ids:
-                        st.session_state.collected_clue_ids.append(c_id)
-                        st.session_state.clues_found.append(st.session_state.CLUES[c_id]["name"])
-                        st.session_state.detective_score += 10
-                        found_new = True
-                        found_clues_list.append(st.session_state.CLUES[c_id]["name"])
-                        
-                update_difficulty()
-                
-                if found_new:
-                    st.session_state.audio_trigger = "clue"
-                    st.session_state.feedback = f"You found clues: {', '.join(found_clues_list)}! (+10 pts each)"
-                    
-                    # Check Plot Twist threshold (>= 3 clues)
-                    if len(st.session_state.collected_clue_ids) >= 3 and not st.session_state.plot_twist_triggered:
-                        trigger_plot_twist_event()
-                else:
-                    st.session_state.feedback = "You searched thoroughly but found no new clues here."
-                
-                st.rerun()
-
-        st.markdown("#### 👥 Suspects Present here:")
-        room_suspects = room["suspects"]
-        if room_suspects:
-            for s_id in room_suspects:
-                suspect = st.session_state.SUSPECTS[s_id]
-                st.markdown(f"👤 **{suspect['name']}** - *{suspect['role']}*")
-                
-                # Interrogation modal trigger
-                if st.button(f"Interrogate {suspect['name']}", key=f"int_{s_id}"):
-                    st.session_state.active_interrogation = s_id
-                    if s_id not in st.session_state.interrogated_suspects:
-                        st.session_state.interrogated_suspects.append(s_id)
-                        st.session_state.detective_score += 5
-                        st.session_state.feedback = f"First meeting with {suspect['name']}! (+5 pts)"
-                        update_difficulty()
-                        st.rerun()
+        if found_new:
+            st.session_state.audio_trigger = "clue"
+            st.session_state.feedback = f"You found clues: {', '.join(found_clues_list)}! (+10 pts each)"
+            
+            # Check Plot Twist threshold (>= 3 clues)
+            if len(st.session_state.collected_clue_ids) >= 3 and not st.session_state.plot_twist_triggered:
+                trigger_plot_twist_event()
         else:
-            st.info("No suspects are currently in this room.")
-            st.session_state.active_interrogation = None
-
-        # Render interrogation options if suspect selected
-        if st.session_state.get("active_interrogation"):
-            active_id = st.session_state.active_interrogation
-            active_suspect = st.session_state.SUSPECTS[active_id]
-            st.markdown(f"---")
-            st.markdown(f"💬 **Questioning {active_suspect['name']}**")
-            
-            # Question Options
-            question_choices = [
-                ("Ask about their alibi", "alibi"),
-                ("Ask about their motive", "motive"),
-                ("Ask about their secrets", "secret")
-            ]
-            for other_id, other_s in st.session_state.SUSPECTS.items():
-                if other_id != active_id:
-                    question_choices.append((f"Ask about {other_s['name']}", f"about_{other_id.split('_')[-1]}"))
-            for c_id in st.session_state.collected_clue_ids:
-                c_name = st.session_state.CLUES[c_id]["name"]
-                question_choices.append((f"Ask about {c_name}", f"about_{c_id}"))
-
-            selected_q_label, q_key = st.selectbox("Select question to ask (costs 1 hour):", question_choices, format_func=lambda x: x[0], key="q_select")
-            
-            if st.button("Ask Suspect"):
-                if st.session_state.turns_left < 1:
-                    st.warning("Not enough time left to ask!")
-                else:
-                    st.session_state.turns_left -= 1
-                    
-                    # Interrogation dynamics checks
-                    is_about_other = q_key.startswith("about_") and not any(c in q_key for c in st.session_state.CLUES)
-                    
-                    if (st.session_state.difficulty_level in ["Intermediate", "Advanced"]) and q_key == "secret" and len(st.session_state.collected_clue_ids) < 2:
-                        ans = "I don't trust you enough to share private secrets, detective. Find more evidence first."
-                    elif st.session_state.difficulty_level == "Advanced" and is_about_other:
-                        ans = "How dare you ask me to gossip or accuse others! This interrogation is over!"
-                        st.session_state.active_interrogation = None
-                    else:
-                        ans = active_suspect["dialogue"].get(q_key, "I have nothing to say about that.")
-                        
-                        # Contradiction Resolution Check
-                        is_contradiction = False
-                        clue_asked = q_key[6:] if q_key.startswith("about_") else ""
-                        if active_id in st.session_state.CONTRADICTIONS and st.session_state.CONTRADICTIONS[active_id] == clue_asked:
-                            is_contradiction = True
-                            
-                        if is_contradiction:
-                            contr_id = f"{active_id}_{q_key}"
-                            if contr_id not in st.session_state.resolved_contradictions:
-                                st.session_state.resolved_contradictions.append(contr_id)
-                                st.session_state.detective_score += 20
-                                st.session_state.audio_trigger = "contradiction"
-                                st.session_state.feedback = f"Alibi Broken! caught contradiction in {active_suspect['name']}'s statements (+20 pts)!"
-                                update_difficulty()
-                                ans = ans.replace("[CONTRADICTION FOUND!]", "[CONTRADICTION FOUND!]")
-                            else:
-                                ans = ans.replace("[CONTRADICTION FOUND!]", "[CONTRADICTION ALREADY RESOLVED]")
-
-                    # Save question response log
-                    st.session_state.interrogated_dialogues.insert(0, {
-                        "suspect": active_suspect["name"],
-                        "question": selected_q_label,
-                        "answer": ans
-                    })
-                    st.rerun()
-
-            # Display dialogue responses logs
-            if st.session_state.interrogated_dialogues:
-                st.markdown("**Dialogue Log:**")
-                for d in st.session_state.interrogated_dialogues[:3]:
-                    st.markdown(f"> **You asked:** *\"{d['question']}\"*  \n> 🗣️ **{d['suspect']} responds:** \"{d['answer']}\"")
-
-    with col_map:
-        st.markdown("### 🗺️ Manor Map & Travel")
-        render_manor_map()
+            st.session_state.feedback = "You searched thoroughly but found no new clues here."
         
-        st.markdown("#### Move to connected room (costs 1 hour):")
-        for conn in room["connections"]:
-            conn_name = st.session_state.ROOMS[conn]["name"]
-            if st.button(f"🚪 Go to {conn_name}", key=f"nav_{conn}"):
-                if st.session_state.turns_left < 1:
-                    st.warning("Not enough time left to travel!")
-                else:
-                    st.session_state.turns_left -= 1
-                    st.session_state.current_room = conn
-                    st.session_state.active_interrogation = None
-                    st.session_state.feedback = f"You entered {conn_name}."
-                    st.rerun()
+        st.rerun()
 
-        # Beginner hints
-        if st.session_state.difficulty_level == "Beginner":
-            st.info("💡 **Beginner Hint:** Check the Study first for the weapon, then search the Library for finances. Confront suspects with items that break their alibis!")
-
-# --- TAB 2: CRIME DOSSIER ---
-with tab_crime:
-    st.subheader("📁 Case File Overview")
-    
-    col_case_meta, col_diagram = st.columns([1, 1.2])
-    
-    with col_case_meta:
-        st.markdown(f"""
-        **Victim profile:**
-        - **Name:** {st.session_state.victim_name}
-        - **Status:** Deceased
-        - **Description:** {st.session_state.victim_desc}
-        
-        **Coroner File:**
-        - **Estimated Time of Death:** 9:00 PM
-        - **Cause of Death:** Cardiac/respiratory failure induced by Aconite poison.
-        - **Discovered Location:** Slumped at the Study mahogany desk.
-        - **Method of Delivery:** poison slipped into a crystal whiskey glass.
-        
-        **Case Progress:**
-        - Currently located in: `{st.session_state.ROOMS[st.session_state.current_room]['name']}`
-        - Investigation Hours elapsed: `{12 - st.session_state.turns_left} / 12 hours`
-        """)
-        
-    with col_diagram:
-        render_study_diagram()
-
-# --- TAB 3: SUSPECT CARDS ---
-with tab_suspects:
-    st.subheader("👥 Suspect Files")
-    
-    cols = st.columns(len(st.session_state.SUSPECTS))
-    for idx, (s_id, suspect) in enumerate(st.session_state.SUSPECTS.items()):
-        with cols[idx]:
-            # Check met status and alibi break status
+    st.markdown("#### 👥 Suspects Present here:")
+    room_suspects = room["suspects"]
+    if room_suspects:
+        for s_id in room_suspects:
+            suspect = st.session_state.SUSPECTS[s_id]
             met = s_id in st.session_state.interrogated_suspects
-            alibi_broken = any(cid.startswith(s_id) for cid in st.session_state.resolved_contradictions)
+            met_badge = "🟢 MET" if met else "⚪ UNMET"
             
-            if alibi_broken:
-                status_header = "🔴 ALIBI BROKEN ❌"
-            elif met:
-                status_header = "🟡 INTERROGATED"
-            else:
-                status_header = "⚪ UNMET"
-                
+            # Draw suspect profile summary card
             st.markdown(f"""
-            <div class="suspect-card-box">
-                <span class="hud-badge">{suspect['role']}</span>
-                <h4>{suspect['name']}</h4>
-                <p style="font-size:12px; font-weight:bold; color: {'#E74C3C' if alibi_broken else '#D4AF37'};">{status_header}</p>
-                <hr style="margin:8px 0;">
-                <p style="font-size:13px;"><strong>Description:</strong> {suspect['description']}</p>
+            <div style="background-color: rgba(128,128,128,0.05); padding: 12px; border-radius: 4px; margin-bottom: 6px; border-left: 3px solid #D4AF37;">
+                <span class="hud-badge" style="font-size:10px;">{suspect['role']}</span>
+                <strong style="font-size:14px; margin-left:5px;">{suspect['name']}</strong> ({met_badge})
+                <p style="font-size:12px; margin: 4px 0 0 0; opacity:0.85;">{suspect['description']}</p>
             </div>
             """, unsafe_allow_html=True)
             
-            if met:
-                with st.expander("Show Detailed Profile"):
-                    st.markdown(f"**Alibi statement:** *\"{suspect['alibi']}\"*")
-                    st.markdown(f"**Motive:** *\"{suspect['motive']}\"*")
-                    if alibi_broken:
-                        contradiction_clue_id = st.session_state.CONTRADICTIONS.get(s_id)
-                        if contradiction_clue_id:
-                            response = suspect["dialogue"].get(f"about_{contradiction_clue_id}", "")
-                            clean_resp = response.replace("[CONTRADICTION FOUND!]", "").replace("[CONTRADICTION ALREADY RESOLVED]", "").strip()
-                            clean_resp = clean_resp.replace(st.session_state.theme, "")
-                            st.markdown(f"**Broken Confession:**")
-                            st.error(f"\"{clean_resp}\"")
-            else:
-                st.caption("Interrogate this suspect in their room to unlock alibi files.")
+            # Interrogation trigger button
+            if st.button(f"🗣️ Interrogate {suspect['name']}", key=f"int_{s_id}", use_container_width=True):
+                st.session_state.active_interrogation = s_id
+                if s_id not in st.session_state.interrogated_suspects:
+                    st.session_state.interrogated_suspects.append(s_id)
+                    st.session_state.detective_score += 5
+                    st.session_state.feedback = f"First meeting with {suspect['name']}! (+5 pts)"
+                    update_difficulty()
+                    st.rerun()
+    else:
+        st.info("No suspects are currently in this room.")
+        st.session_state.active_interrogation = None
 
-# --- TAB 4: EVIDENCE LOCKER ---
-with tab_clues:
-    st.subheader(f"🎒 Evidence Locker ({len(st.session_state.collected_clue_ids)}/7 clues gathered)")
-    
-    if st.session_state.collected_clue_ids:
-        cols_clues = st.columns(3)
-        for c_idx, c_id in enumerate(st.session_state.collected_clue_ids):
-            clue = st.session_state.CLUES[c_id]
+    # Render interrogation options if suspect selected
+    if st.session_state.get("active_interrogation"):
+        active_id = st.session_state.active_interrogation
+        active_suspect = st.session_state.SUSPECTS[active_id]
+        st.markdown(f"---")
+        st.markdown(f"💬 **Questioning {active_suspect['name']}**")
+        
+        # Question Options
+        question_choices = [
+            ("Ask about their alibi", "alibi"),
+            ("Ask about their motive", "motive"),
+            ("Ask about their secrets", "secret")
+        ]
+        for other_id, other_s in st.session_state.SUSPECTS.items():
+            if other_id != active_id:
+                question_choices.append((f"Ask about {other_s['name']}", f"about_{other_id.split('_')[-1]}"))
+        for c_id in st.session_state.collected_clue_ids:
+            c_name = st.session_state.CLUES[c_id]["name"]
+            question_choices.append((f"Ask about {c_name}", f"about_{c_id}"))
+
+        selected_q_label, q_key = st.selectbox("Select question to ask:", question_choices, format_func=lambda x: x[0], key="q_select")
+        
+        if st.button("Ask Suspect", use_container_width=True):
+            # Interrogation dynamics checks
+            is_about_other = q_key.startswith("about_") and not any(c in q_key for c in st.session_state.CLUES)
             
-            # Find which room this clue is in
+            if (st.session_state.difficulty_level in ["Intermediate", "Advanced"]) and q_key == "secret" and len(st.session_state.collected_clue_ids) < 2:
+                ans = "I don't trust you enough to share private secrets, detective. Find more evidence first."
+            elif st.session_state.difficulty_level == "Advanced" and is_about_other:
+                ans = "How dare you ask me to gossip or accuse others! This interrogation is over!"
+                st.session_state.active_interrogation = None
+            else:
+                ans = active_suspect["dialogue"].get(q_key, "I have nothing to say about that.")
+                
+                # Contradiction Resolution Check
+                is_contradiction = False
+                clue_asked = q_key[6:] if q_key.startswith("about_") else ""
+                if active_id in st.session_state.CONTRADICTIONS and st.session_state.CONTRADICTIONS[active_id] == clue_asked:
+                    is_contradiction = True
+                    
+                if is_contradiction:
+                    contr_id = f"{active_id}_{q_key}"
+                    if contr_id not in st.session_state.resolved_contradictions:
+                        st.session_state.resolved_contradictions.append(contr_id)
+                        st.session_state.detective_score += 20
+                        st.session_state.audio_trigger = "contradiction"
+                        st.session_state.feedback = f"Alibi Broken! caught contradiction in {active_suspect['name']}'s statements (+20 pts)!"
+                        update_difficulty()
+                        ans = ans.replace("[CONTRADICTION FOUND!]", "[CONTRADICTION FOUND!]")
+                    else:
+                        ans = ans.replace("[CONTRADICTION FOUND!]", "[CONTRADICTION ALREADY RESOLVED]")
+
+            # Save question response log
+            st.session_state.interrogated_dialogues.insert(0, {
+                "suspect": active_suspect["name"],
+                "question": selected_q_label,
+                "answer": ans
+            })
+            st.rerun()
+
+        # Display dialogue responses logs
+        if st.session_state.interrogated_dialogues:
+            st.markdown("**Dialogue Log:**")
+            for d in st.session_state.interrogated_dialogues[:3]:
+                st.markdown(f"> **You asked:** *\"{d['question']}\"*  \n> 🗣️ **{d['suspect']} responds:** \"{d['answer']}\"")
+
+    st.markdown("### 🗺️ Manor Map & Travel")
+    render_manor_map()
+    
+    st.markdown("#### Move to connected room:")
+    cols_nav = st.columns(len(room["connections"]))
+    for idx, conn in enumerate(room["connections"]):
+        conn_name = st.session_state.ROOMS[conn]["name"]
+        clue_count = len(st.session_state.ROOMS[conn]["clues"])
+        found_count = len([cid for cid in st.session_state.ROOMS[conn]["clues"] if cid in st.session_state.collected_clue_ids])
+        unfound = clue_count - found_count
+        
+        btn_label = f"🚪 Go to {conn_name.split('(')[0].strip()}"
+        if unfound > 0 and st.session_state.difficulty_level == "Beginner":
+            btn_label += f" ({unfound} 🔍)"
+            
+        with cols_nav[idx]:
+            if st.button(btn_label, key=f"nav_{conn}", use_container_width=True):
+                st.session_state.current_room = conn
+                st.session_state.active_interrogation = None
+                st.session_state.feedback = f"You entered {st.session_state.ROOMS[conn]['name']}."
+                st.rerun()
+
+    # Beginner hints
+    if st.session_state.difficulty_level == "Beginner":
+        st.info("💡 **Beginner Hint:** Check the Study first for the weapon, then search the Library for finances. Confront suspects with items that break their alibis!")
+
+with col_notebook:
+    # 1. Detective Checklist
+    st.markdown("### 📋 Detective's Checklist")
+    
+    total_rooms = len(st.session_state.ROOMS)
+    if "visited_rooms" not in st.session_state:
+        st.session_state.visited_rooms = ["foyer"]
+    if st.session_state.current_room not in st.session_state.visited_rooms:
+        st.session_state.visited_rooms.append(st.session_state.current_room)
+        
+    rooms_visited = len(st.session_state.visited_rooms)
+    clues_found_count = len(st.session_state.collected_clue_ids)
+    suspects_met = len(st.session_state.interrogated_suspects)
+    contradictions_solved = len(st.session_state.resolved_contradictions)
+    
+    st.markdown(f"🧭 **Rooms Visited:** `{rooms_visited} / {total_rooms}`")
+    st.markdown(f"👥 **Suspects Met:** `{suspects_met} / 3`")
+    st.markdown(f"🎒 **Clues Discovered:** `{clues_found_count} / 7`")
+    st.markdown(f"🧩 **Alibi Contradictions Resolved:** `{contradictions_solved} / 3`")
+    
+    # 2. Evidence Locker
+    st.markdown("### 🎒 Evidence Locker")
+    if st.session_state.collected_clue_ids:
+        for c_id in st.session_state.collected_clue_ids:
+            clue = st.session_state.CLUES[c_id]
             clue_room = "Unknown"
             for r_id, r in st.session_state.ROOMS.items():
-                if c_id in r["clues"] or c_id in st.session_state.CLUES: # fallback
-                    # Check if matches
-                    if c_id in r["clues"]:
-                        clue_room = r["name"]
-                        break
+                if c_id in r["clues"]:
+                    clue_room = r["name"]
+                    break
             if clue_room == "Unknown" and c_id in ["whiskey_glass", "will_papers", "pearl_earring"]:
                 clue_room = "The Study (CRIME SCENE)"
             elif clue_room == "Unknown" and c_id == "ledger_page":
@@ -1174,50 +1195,86 @@ with tab_clues:
                 clue_room = "The Conservatory"
             elif clue_room == "Unknown" and c_id in ["bookie_letter", "billiard_cover"]:
                 clue_room = "The Lounge"
-                        
-            with cols_clues[c_idx % 3]:
-                st.markdown(f"""
-                <div class="clue-locker-card">
-                    <h5>🔍 {clue['name']}</h5>
-                    <p style="font-size:12px; margin-bottom:5px; opacity:0.8;">Found in: {clue_room}</p>
-                    <p style="font-size:13px; font-style:italic; margin-top:5px;">{clue['description']}</p>
-                </div>
-                """, unsafe_allow_html=True)
+                
+            st.markdown(f"🔎 **{clue['name']}** *(Found in: {clue_room})*")
+            st.markdown(f"<p style='font-size:12px; margin: -5px 0 5px 15px; opacity:0.8; font-style:italic;'>{clue['description']}</p>", unsafe_allow_html=True)
     else:
         st.info("No clues discovered yet. Move to rooms like the Study and search for evidence.")
 
-# --- TAB 5: ACCUSATION CHAMBER ---
-with tab_accuse:
-    st.subheader("⚖️ Present Final Case")
-    st.warning("⚠️ **Accusation Rules:** You must select the correct killer, name the exact murder weapon, and present the key piece of proof. If you accuse incorrectly, the killer escapes and you lose the game immediately!")
+    # 3. Suspect Dossiers
+    st.markdown("### 👥 Suspect Dossiers")
+    for s_id, suspect in st.session_state.SUSPECTS.items():
+        met = s_id in st.session_state.interrogated_suspects
+        alibi_broken = any(cid.startswith(s_id) for cid in st.session_state.resolved_contradictions)
+        
+        if alibi_broken:
+            status_header = "🔴 ALIBI BROKEN ❌"
+            border_style = "border-left: 4px solid #E74C3C;"
+        elif met:
+            status_header = "🟡 INTERROGATED"
+            border_style = "border-left: 4px solid #D4AF37;"
+        else:
+            status_header = "⚪ UNMET"
+            border_style = "border-left: 4px solid #E0E0E0;"
+            
+        st.markdown(f"""
+        <div style="background-color: rgba(128,128,128,0.05); padding: 8px 12px; border-radius: 4px; margin-bottom: 5px; {border_style}">
+            <strong style="font-size:11px; color: #D4AF37;">{suspect['role']}</strong>
+            <h5 style="margin: 2px 0; font-size:13px;">{suspect['name']} ({status_header})</h5>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if met:
+            with st.expander(f"View profiles/alibis for {suspect['name']}", expanded=alibi_broken):
+                st.markdown(f"**Alibi statement:** *\"{suspect['alibi']}\"*")
+                st.markdown(f"**Motive:** *\"{suspect['motive']}\"*")
+                if alibi_broken:
+                    contradiction_clue_id = st.session_state.CONTRADICTIONS.get(s_id)
+                    if contradiction_clue_id:
+                        response = suspect["dialogue"].get(f"about_{contradiction_clue_id}", "")
+                        clean_resp = response.replace("[CONTRADICTION FOUND!]", "").replace("[CONTRADICTION ALREADY RESOLVED]", "").strip()
+                        clean_resp = clean_resp.replace(st.session_state.theme, "")
+                        st.error(f"Broken Confession: \"{clean_resp}\"")
+
+    # 4. Crime Scene Dossier (Floor Plan)
+    with st.expander("📁 Crime Scene Dossier & Floor Plan", expanded=False):
+        st.markdown(f"""
+        **Victim profile:**
+        - **Name:** {st.session_state.victim_name}
+        - **Description:** {st.session_state.victim_desc}
+        
+        **Coroner Report:**
+        - **Estimated Time of Death:** 9:00 PM
+        - **Cause of Death:** Cardiac/respiratory failure induced by Aconite poison slipped into a crystal whiskey glass.
+        """)
+        render_study_diagram()
+
+    # 5. Accusation Chamber
+    st.markdown("### ⚖️ Accusation Chamber")
+    st.warning("⚠️ **Accusation Rules:** You must select the correct killer, weapon, and key proof. An incorrect guess will cause the killer to escape!")
     
     if not st.session_state.collected_clue_ids:
         st.info("You must gather at least some clues before you can make an accusation.")
     else:
-        col_select_sus, col_select_weap, col_select_proof = st.columns(3)
+        accused_killer_name = st.selectbox(
+            "Select Accused Suspect:",
+            options=list(st.session_state.SUSPECTS.keys()),
+            format_func=lambda x: st.session_state.SUSPECTS[x]["name"],
+            key="accuse_s"
+        )
+        accused_weapon_id = st.selectbox(
+            "Select Murder Method / Weapon Clue:",
+            options=st.session_state.collected_clue_ids,
+            format_func=lambda x: st.session_state.CLUES[x]["name"],
+            key="accuse_w"
+        )
+        accused_proof_id = st.selectbox(
+            "Select Key Link / Embezzlement Proof:",
+            options=st.session_state.collected_clue_ids,
+            format_func=lambda x: st.session_state.CLUES[x]["name"],
+            key="accuse_p"
+        )
         
-        with col_select_sus:
-            accused_killer_name = st.selectbox(
-                "Select Accused Suspect:",
-                options=list(st.session_state.SUSPECTS.keys()),
-                format_func=lambda x: st.session_state.SUSPECTS[x]["name"],
-                key="accuse_s"
-            )
-        with col_select_weap:
-            accused_weapon_id = st.selectbox(
-                "Select Murder Method / Weapon Clue:",
-                options=st.session_state.collected_clue_ids,
-                format_func=lambda x: st.session_state.CLUES[x]["name"],
-                key="accuse_w"
-            )
-        with col_select_proof:
-            accused_proof_id = st.selectbox(
-                "Select Key Link / Embezzlement Proof:",
-                options=st.session_state.collected_clue_ids,
-                format_func=lambda x: st.session_state.CLUES[x]["name"],
-                key="accuse_p"
-            )
-            
         st.markdown("---")
         st.markdown(f"**Your Case Accusation File Summary:**")
         st.markdown(f"1. **Killer:** {st.session_state.SUSPECTS[accused_killer_name]['name']}")
@@ -1225,15 +1282,26 @@ with tab_accuse:
         st.markdown(f"3. **Proof:** {st.session_state.CLUES[accused_proof_id]['name']}")
         
         if st.button("⚖️ SUBMIT FINAL ACCUSATION CASE", use_container_width=True):
-            st.session_state.game_over = True
-            
             # Check correctness
             if (accused_killer_name == st.session_state.killer_id and 
                 accused_weapon_id == st.session_state.weapon_clue_id and 
                 accused_proof_id == st.session_state.proof_clue_id):
+                st.session_state.game_over = True
                 st.session_state.game_over_reason = "won"
                 st.session_state.audio_trigger = "success"
             else:
-                st.session_state.game_over_reason = "wrong accusation"
+                # Wrong accusation: deduct 10 points if enough points
+                deduct = 0
+                if st.session_state.detective_score >= 10:
+                    st.session_state.detective_score -= 10
+                    deduct = 10
+                else:
+                    st.session_state.detective_score = 0
+                    
                 st.session_state.audio_trigger = "failure"
+                if deduct > 0:
+                    st.session_state.feedback = f"Incorrect Accusation! The suspect has an alibi or the evidence doesn't match up. You lost {deduct} points. Try again!"
+                else:
+                    st.session_state.feedback = "Incorrect Accusation! The suspect has an alibi or the evidence doesn't match up. (You have 0 points, so no score was deducted). Try again!"
+                update_difficulty()
             st.rerun()
