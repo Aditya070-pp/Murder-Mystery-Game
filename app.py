@@ -840,7 +840,7 @@ if st.session_state.get("unlocked_case_index", 0) > 0 and not st.session_state.g
     sel_case_idx = case_options.index(sel_case)
     if sel_case_idx != st.session_state.current_case_index:
         st.session_state.current_case_index = sel_case_idx
-        init_game_state(force_reset=True, custom_api_key=load_api_key())
+        init_game_state(force_reset=True)
         st.rerun()
 
 
@@ -905,19 +905,11 @@ if notes_val != st.session_state.custom_notes:
 st.sidebar.divider()
 
 # Game Restart Controls
-api_val = st.sidebar.text_input("Gemini API Key:", value=load_api_key(), type="password")
-if st.sidebar.button("Restart Mystery (Regen Case)"):
-    if api_val:
-        # Save key
-        try:
-            with open(".env", "w", encoding="utf-8") as f:
-                f.write(f"GEMINI_API_KEY={api_val}\n")
-        except Exception:
-            pass
+if st.sidebar.button("Restart Campaign"):
     st.session_state.current_case_index = 0
     st.session_state.unlocked_case_index = 0
     st.session_state.cumulative_score = 0
-    init_game_state(force_reset=True, custom_api_key=api_val)
+    init_game_state(force_reset=True)
     st.rerun()
 
 # --- MAIN SCREEN INTERFACE ---
@@ -1000,7 +992,7 @@ if st.session_state.game_over:
         """, unsafe_allow_html=True)
         
         if st.button("🔄 Restart Case with New Details"):
-            init_game_state(force_reset=True, custom_api_key=api_val)
+            init_game_state(force_reset=True)
             st.rerun()
     else:
         if st.session_state.current_case_index < 2:
@@ -1009,7 +1001,7 @@ if st.session_state.game_over:
                 st.session_state.current_case_index += 1
                 if st.session_state.current_case_index > st.session_state.unlocked_case_index:
                     st.session_state.unlocked_case_index = st.session_state.current_case_index
-                init_game_state(force_reset=True, custom_api_key=api_val)
+                init_game_state(force_reset=True)
                 st.rerun()
         else:
             st.success("🏆 You've cracked the entire campaign! You are a master detective.")
@@ -1017,7 +1009,7 @@ if st.session_state.game_over:
                 st.session_state.current_case_index = 0
                 st.session_state.unlocked_case_index = 0
                 st.session_state.cumulative_score = 0
-                init_game_state(force_reset=True, custom_api_key=api_val)
+                init_game_state(force_reset=True)
     st.stop()
 
 # 4. Check for Plot Twist
