@@ -8,6 +8,41 @@ import json
 import io
 import math
 import struct
+from cases import OFFLINE_CASES_DB
+
+def get_score_values():
+    skill = st.session_state.get("player_skill", "Beginner (Easier)")
+    if "Beginner" in skill:
+        return {"clue": 15, "suspect": 10, "contradiction": 25, "twist": 20, "wrong_accuse": -5}
+    elif "Intermediate" in skill:
+        return {"clue": 10, "suspect": 5, "contradiction": 20, "twist": 15, "wrong_accuse": -5}
+    else: # Advanced (Hard)
+        return {"clue": 5, "suspect": 2, "contradiction": 10, "twist": 10, "wrong_accuse": -5}
+
+def get_hints_pool():
+    if not st.session_state.get("is_ai_case", False):
+        case_index = st.session_state.get("current_case_index", 0)
+        return OFFLINE_CASES_DB[case_index]["hints"]
+    else:
+        suspect_ids = list(st.session_state.SUSPECTS.keys())
+        clues = st.session_state.CLUES
+        suspects = st.session_state.SUSPECTS
+        
+        hints = []
+        w_name = clues.get(st.session_state.weapon_clue_id, {}).get("name", "murder weapon")
+        hints.append(f"The crime scene is the Study. Search it first to find the murder weapon: {w_name}.")
+        
+        for s_id in suspect_ids[:3]:
+            s_name = suspects[s_id]["name"]
+            alibi = suspects[s_id]["alibi"]
+            contr_id = st.session_state.CONTRADICTIONS.get(s_id, "")
+            contr_name = clues.get(contr_id, {}).get("name", "contradictory evidence")
+            hints.append(f"{s_name} claims: '{alibi}'. Look for {contr_name} to break their alibi.")
+            
+        p_name = clues.get(st.session_state.proof_clue_id, {}).get("name", "key proof")
+        k_name = suspects.get(st.session_state.killer_id, {}).get("name", "the killer")
+        hints.append(f"The key proof linking the killer is the {p_name}. It links {k_name} to the murder scene.")
+        return hints
 
 # --- APP CONFIGURATION ---
 st.set_page_config(
@@ -399,7 +434,8 @@ def generate_ai_case(api_key):
         '  "proof_clue_id": "clue_2",\n'
         '  "suspect_1_contradiction_clue_id": "clue_3",\n'
         '  "suspect_2_contradiction_clue_id": "clue_4",\n'
-        '  "suspect_3_contradiction_clue_id": "clue_5"\n'
+        '  "suspect_3_contradiction_clue_id": "clue_5",\n'
+        '  "explanation": "Detailed step-by-step logic of how the crime was committed, why the killer did it, and how the proof and contradiction clues reveal their guilt."\n'
         '}\n\n'
         "Rules:\n"
         "- The Study (study) is the CRIME SCENE. The murder weapon (weapon_clue_id) MUST be hidden in the study.\n"
@@ -529,192 +565,39 @@ def trigger_plot_twist_event():
         twist_data = random.choice(default_twists)
     
     st.session_state.plot_twist_data = twist_data
-    st.session_state.detective_score += 15
+    scores = get_score_values()
+    st.session_state.detective_score += scores["twist"]
     st.session_state.audio_trigger = "twist"
     st.session_state.custom_notes += f"\n[PLOT TWIST - {twist_data['type']}] {twist_data['title']}: {twist_data['description']}"
-    st.session_state.feedback = f"PLOT TWIST TRIGGERED: {twist_data['title']} (+15 pts)"
+    st.session_state.feedback = f"PLOT TWIST TRIGGERED: {twist_data['title']} (+{scores['twist']} pts)"
     update_difficulty()
 
 # --- STATE INITIALIZATION & RESET ---
 def init_game_state(force_reset=False, custom_api_key=""):
+    if "current_case_index" not in st.session_state:
+        st.session_state.current_case_index = 0
+    if "unlocked_case_index" not in st.session_state:
+        st.session_state.unlocked_case_index = 0
+    if "cumulative_score" not in st.session_state:
+        st.session_state.cumulative_score = 0
+    if "player_skill" not in st.session_state:
+        st.session_state.player_skill = "Beginner (Easier)"
+    if "is_ai_case" not in st.session_state:
+        st.session_state.is_ai_case = False
+
     if "initialized" not in st.session_state or not st.session_state.initialized or force_reset:
         st.session_state.initialized = False
-        st.session_state.victim_name = "Lord Reginald Harrington"
-        st.session_state.victim_desc = "a wealthy philanthropist and art collector"
-        
-        # Room connection mappings
-        st.session_state.ROOMS = {
-            "foyer": {
-                "name": "The Foyer",
-                "description": "The grand entrance hall of Blackwood Manor. A large chandelier hangs from the ceiling.",
-                "connections": ["study", "library", "lounge", "conservatory"],
-                "clues": [],
-                "suspects": []
-            },
-            "study": {
-                "name": "The Study (CRIME SCENE)",
-                "description": "The official CRIME SCENE where the victim's body was found slumped at his desk.",
-                "connections": ["foyer", "library"],
-                "clues": ["whiskey_glass", "will_papers", "pearl_earring"],
-                "suspects": []
-            },
-            "library": {
-                "name": "The Library",
-                "description": "A quiet room filled with tall, dusty bookshelves and a warm, crackling fireplace.",
-                "connections": ["foyer", "study"],
-                "clues": ["ledger_page"],
-                "suspects": ["lady_eleanor"]
-            },
-            "conservatory": {
-                "name": "The Conservatory",
-                "description": "A glass greenhouse filled with damp air and exotic, shadow-casting plants.",
-                "connections": ["foyer"],
-                "clues": ["latex_glove"],
-                "suspects": ["dr_croft"]
-            },
-            "lounge": {
-                "name": "The Lounge",
-                "description": "A comfortable room containing a green-felt billiard table, leather armchairs, and a drinks cabinet.",
-                "connections": ["foyer"],
-                "clues": ["bookie_letter", "billiard_cover"],
-                "suspects": ["arthur"]
-            }
-        }
-        
-        # Default Clues
-        st.session_state.CLUES = {
-            "whiskey_glass": {
-                "name": "Poisoned Whiskey Glass",
-                "description": "A crystal glass on Lord Harrington's desk smelling of bitter almonds (a sign of Aconite poison)."
-            },
-            "will_papers": {
-                "name": "Confidential Will",
-                "description": "Signed papers in the study desk showing Lord Harrington was cutting off Lady Eleanor completely."
-            },
-            "ledger_page": {
-                "name": "Torn Ledger Page",
-                "description": "A discarded sheet detailing a charity audit showing 'J.C.' embezzled £50,000 from Lord Harrington's funds."
-            },
-            "bookie_letter": {
-                "name": "Threatening Letter",
-                "description": "A bookie letter addressed to Arthur Harrington demanding £20,000 immediately."
-            },
-            "pearl_earring": {
-                "name": "Dropped Pearl Earring",
-                "description": "A white pearl earring found on the floor of the Study (Crime Scene). It matches Lady Eleanor's set."
-            },
-            "billiard_cover": {
-                "name": "Dusty Billiard Cover",
-                "description": "A thick, dusty canvas cover completely draped over the billiard table. It hasn't been removed in weeks."
-            },
-            "latex_glove": {
-                "name": "Stained Latex Glove",
-                "description": "A medical glove in the Conservatory bin, stained with whiskey and trace elements of Aconite."
-            }
-        }
-        
-        # Default Suspects
-        st.session_state.SUSPECTS = {
-            "lady_eleanor": {
-                "name": "Lady Eleanor Harrington",
-                "role": "The Estranged Wife",
-                "description": "The elegant wife of the victim. She stands tall, wearing black lace and looking cold.",
-                "alibi": "I was in the Library reading my historical novel all evening. I did not go to any other rooms, especially not the Study.",
-                "motive": "Yes, Lord Harrington and I had our disagreements, but I would not resort to murder.",
-                "dialogue": {
-                    "alibi": "I went to the Library around 7 PM and stayed there until the housekeeper found him. I did not leave the room.",
-                    "motive": "He was planning to divorce me and leave me with nothing, but I would have fought him in court, not poisoned Lord Harrington.",
-                    "secret": "We argued in the study before dinner because he was being unreasonable. But that is all.",
-                    "about_arthur": "Arthur is a foolish boy who spends too much money gambling. But he is not a murderer.",
-                    "about_croft": "Dr. Croft has been our doctor for years. My husband trusted him completely with charity accounts.",
-                    "about_whiskey_glass": "Lord Harrington always had a glass of whiskey before bed. He kept the bottle in his study.",
-                    "about_will_papers": "So you found the will. Yes, he wanted to cut me off. He was a cruel partner.",
-                    "about_ledger_page": "A ledger page? I know nothing of charity finances. Dr. Croft managed those accounts.",
-                    "about_bookie_letter": "Another one of Arthur's debts... It is disappointing.",
-                    "about_pearl_earring": "My... pearl earring? You found it in the Study? [CONTRADICTION FOUND!] Oh dear... okay, fine. I did slip into the Study briefly after dinner to look for the Will. I lied because I was terrified of being suspected. But he was already dead when I got there, I swear!",
-                    "about_billiard_cover": "I know nothing of Arthur's games.",
-                    "about_latex_glove": "Medical gloves? Those belong to Dr. Croft, surely."
-                }
-            },
-            "arthur": {
-                "name": "Arthur Harrington",
-                "role": "The Spendthrift Son",
-                "description": "The victim's son. He looks disheveled, nervously tapping his foot and biting his nails.",
-                "alibi": "I was in the Lounge playing billiards all evening. I never left.",
-                "motive": "Sure, my dad and I didn't get along, and he cut off my allowance. But I wouldn't kill him!",
-                "dialogue": {
-                    "alibi": "I was in the Lounge knocking balls around from 8 PM onwards. Ask anyone.",
-                    "motive": "He expected me to be perfect. When I wasn't, he cut me off. I needed help, not lectures.",
-                    "secret": "Fine! I have massive gambling debts. But murder doesn't pay debts, inheritance does... wait, that came out wrong!",
-                    "about_eleanor": "My stepmother Eleanor? She's cold as ice. I saw them shouting at each other today in the study.",
-                    "about_croft": "Dr. Croft? Dad's physician. He's always around talking about his botanical laboratory experiments.",
-                    "about_whiskey_glass": "Dad drank whiskey. A lot. I saw someone leave the study with a glass earlier, but I couldn't see who.",
-                    "about_will_papers": "A new Will? Wow. I didn't know he was actually going through with it. Eleanor must have been furious.",
-                    "about_ledger_page": "Discrepancies? I don't know anything about dad's charity ledger. Talk to Dr. Croft.",
-                    "about_bookie_letter": "Please, Detective, don't show that to the police! I was going to ask my father for one last loan.",
-                    "about_pearl_earring": "Eleanor's jewelry? She wears them constantly.",
-                    "about_billiard_cover": "Wait... you found the table covered in dust? [CONTRADICTION FOUND!] Ah... you caught me. I didn't play billiards. I was actually sitting in the corner drinking alone, trying to summon the courage to ask my father for money. I was ashamed to admit it.",
-                    "about_latex_glove": "I don't use medical gloves."
-                }
-            },
-            "dr_croft": {
-                "name": "Dr. Julian Croft",
-                "role": "The Family Physician",
-                "description": "The family doctor. He looks calm and professional, cleaning his glasses with a cloth.",
-                "alibi": "I was in the Conservatory cataloging botanical specimens all evening.",
-                "motive": "Lord Harrington was my dearest friend. I have no reason to wish him harm.",
-                "dialogue": {
-                    "alibi": "I was in the Conservatory from 7:30 PM until I heard the screams. I was sorting through my collection.",
-                    "motive": "We were co-founders of the charity. Our friendship was built on mutual respect.",
-                    "secret": "I have nothing to hide, Inspector. I spent my evening in study and observation.",
-                    "about_eleanor": "Lady Eleanor is a proud woman. Her marriage to Lord Harrington was a union of convenience. They argued frequently.",
-                    "about_arthur": "Arthur is a troubled young man. His gambling habits are a tragedy, and Lord Harrington was incredibly disappointed in him.",
-                    "about_whiskey_glass": "Aconite in his whiskey? Horrible. Aconite causes swift cardiorespiratory failure. It is a terrible way to die.",
-                    "about_will_papers": "Ah, Lord Harrington mentioned he was considering a new Will. Eleanor stood to lose everything.",
-                    "about_ledger_page": "A charity ledger page? Let me see... I-I don't recognize this. This looks like a draft. Our accounts are in perfect order.",
-                    "about_bookie_letter": "Ah, another threat to Arthur. It seems Arthur had a powerful motive.",
-                    "about_pearl_earring": "Lady Eleanor's earring? I believe I saw her wearing it earlier.",
-                    "about_billiard_cover": "Arthur playing billiards? He spends more time drinking than playing.",
-                    "about_latex_glove": "A latex glove stained with medical solution and whiskey? [CONTRADICTION FOUND!] Wait, that solution is from my laboratory... Ah! I must have dropped it when I was examining Lord Harrington's body... wait, no! I mean... when I checked on him after the housekeeper found him! Yes, that's it!"
-                }
-            }
-        }
-        
-        # Default Targets
-        st.session_state.killer_id = "dr_croft"
-        st.session_state.weapon_clue_id = "whiskey_glass"
-        st.session_state.proof_clue_id = "ledger_page"
-        st.session_state.CONTRADICTIONS = {
-            "lady_eleanor": "pearl_earring",
-            "arthur": "billiard_cover",
-            "dr_croft": "latex_glove"
-        }
-        
-        # State Variables
-        st.session_state.current_room = "foyer"
-        st.session_state.collected_clue_ids = []
-        st.session_state.clues_found = []
-        st.session_state.interrogated_suspects = []
-        st.session_state.resolved_contradictions = []
-        st.session_state.custom_notes = ""
-        st.session_state.visited_rooms = ["foyer"]
-        st.session_state.detective_score = 0
-        st.session_state.difficulty_level = "Beginner"
-        st.session_state.plot_twist_triggered = False
-        st.session_state.plot_twist_data = None
-        st.session_state.audio_trigger = None
-        st.session_state.game_over = False
-        st.session_state.game_over_reason = None
-        st.session_state.feedback = ""
-        st.session_state.interrogated_dialogues = [] # logs questions asked
+        st.session_state.detective_score = 15 # Case starting score
+        st.session_state.accusation_attempts = 0
+        st.session_state.unlocked_hints_count = 0
         
         # Load API case if key available
         active_key = custom_api_key if custom_api_key else load_api_key()
         if active_key:
+            st.session_state.is_ai_case = True
             ai_data = generate_ai_case(active_key)
             if ai_data:
                 try:
-                    # Transactional parsing
                     temp_victim_name = ai_data["victim"]["name"]
                     temp_victim_desc = ai_data["victim"]["desc"]
                     temp_clues = ai_data["clues"]
@@ -722,6 +605,7 @@ def init_game_state(force_reset=False, custom_api_key=""):
                     temp_killer_id = ai_data["killer_id"]
                     temp_weapon_clue_id = ai_data["weapon_clue_id"]
                     temp_proof_clue_id = ai_data["proof_clue_id"]
+                    temp_explanation = ai_data.get("explanation", "The suspect is the killer, linked by the weapon and key proof.")
                     
                     if temp_killer_id not in temp_suspects:
                         raise KeyError("Killer ID not in suspects")
@@ -751,12 +635,48 @@ def init_game_state(force_reset=False, custom_api_key=""):
                     st.session_state.weapon_clue_id = temp_weapon_clue_id
                     st.session_state.proof_clue_id = temp_proof_clue_id
                     st.session_state.CONTRADICTIONS = temp_contradictions
+                    st.session_state.case_explanation = temp_explanation
+                    st.session_state.case_title = f"AI Dynamic Case: {temp_victim_name}"
                     
-                    # Clear and distribute
-                    for r_id in st.session_state.ROOMS:
-                        st.session_state.ROOMS[r_id]["clues"] = []
-                        st.session_state.ROOMS[r_id]["suspects"] = []
-                        
+                    # Distribute clues and suspects
+                    st.session_state.ROOMS = {
+                        "foyer": {
+                            "name": "The Foyer",
+                            "description": "The grand entrance hall of the manor.",
+                            "connections": ["study", "library", "lounge", "conservatory"],
+                            "clues": [],
+                            "suspects": []
+                        },
+                        "study": {
+                            "name": "The Study (CRIME SCENE)",
+                            "description": "The official CRIME SCENE where the body was found slumped at the desk.",
+                            "connections": ["foyer", "library"],
+                            "clues": [],
+                            "suspects": []
+                        },
+                        "library": {
+                            "name": "The Library",
+                            "description": "A quiet room filled with tall bookshelves.",
+                            "connections": ["foyer", "study"],
+                            "clues": [],
+                            "suspects": []
+                        },
+                        "conservatory": {
+                            "name": "The Conservatory",
+                            "description": "A glass greenhouse filled with damp air.",
+                            "connections": ["foyer"],
+                            "clues": [],
+                            "suspects": []
+                        },
+                        "lounge": {
+                            "name": "The Lounge",
+                            "description": "A comfortable room containing armchairs.",
+                            "connections": ["foyer"],
+                            "clues": [],
+                            "suspects": []
+                        }
+                    }
+                    
                     for c_id, clue_data in st.session_state.CLUES.items():
                         r_id = clue_data.get("room", "study").lower().strip()
                         if r_id not in st.session_state.ROOMS:
@@ -771,18 +691,101 @@ def init_game_state(force_reset=False, custom_api_key=""):
                     st.session_state.feedback = "Success! Loaded dynamic Gemini mystery case."
                 except Exception as e:
                     st.session_state.feedback = f"Parsing failed ({e}). Defaulting to offline case."
+                    st.session_state.is_ai_case = False
             else:
                 st.session_state.feedback = "API call failed. Defaulting to offline case."
+                st.session_state.is_ai_case = False
         else:
-            st.session_state.feedback = "Playing default offline mystery: The Secret of Blackwood Manor"
+            st.session_state.is_ai_case = False
+
+        if not st.session_state.is_ai_case:
+            case_idx = st.session_state.current_case_index
+            case_data = OFFLINE_CASES_DB[case_idx]
             
+            victim = random.choice(case_data["victim_pool"])
+            v_name = victim["name"]
+            v_desc = victim["desc"]
+            v_surname = v_name.split()[-1]
+            
+            suspect_ids = list(case_data["suspects_template"].keys())
+            killer = random.choice(suspect_ids)
+            
+            killer_info = case_data["killers"][killer]
+            proof_clue = killer_info["proof"]
+            explanation = killer_info["explanation"].format(victim_name=v_name, victim_surname=v_surname)
+            
+            st.session_state.victim_name = v_name
+            st.session_state.victim_desc = v_desc
+            st.session_state.killer_id = killer
+            st.session_state.weapon_clue_id = case_data["weapon_clue_id"]
+            st.session_state.proof_clue_id = proof_clue
+            st.session_state.case_explanation = explanation
+            st.session_state.case_title = case_data["title"]
+            st.session_state.CONTRADICTIONS = case_data["contradictions"]
+            
+            st.session_state.CLUES = {}
+            for c_id, c_val in case_data["clues_template"].items():
+                st.session_state.CLUES[c_id] = {
+                    "name": c_val["name"],
+                    "description": c_val["description"].format(victim_name=v_name, victim_surname=v_surname)
+                }
+                
+            st.session_state.SUSPECTS = {}
+            for s_id, s_val in case_data["suspects_template"].items():
+                formatted_dialogue = {}
+                for q_k, q_v in s_val["dialogue"].items():
+                    formatted_dialogue[q_k] = q_v.format(victim_name=v_name, victim_surname=v_surname)
+                
+                st.session_state.SUSPECTS[s_id] = {
+                    "name": s_val["name"].format(victim_surname=v_surname),
+                    "role": s_val["role"],
+                    "description": s_val["description"].format(victim_surname=v_surname),
+                    "alibi": s_val["alibi"].format(victim_name=v_name),
+                    "motive": s_val["motive"].format(victim_name=v_name),
+                    "dialogue": formatted_dialogue
+                }
+            
+            st.session_state.ROOMS = {}
+            for r_id, r_val in case_data["rooms_templates"].items():
+                st.session_state.ROOMS[r_id] = {
+                    "name": r_val["name"].format(victim_surname=v_surname),
+                    "description": r_val["description"].format(victim_name=v_name, victim_surname=v_surname),
+                    "connections": r_val["connections"],
+                    "clues": [],
+                    "suspects": []
+                }
+                
+            for c_id, c_val in case_data["clues_template"].items():
+                r_id = c_val["room"]
+                st.session_state.ROOMS[r_id]["clues"].append(c_id)
+                
+            for s_id, s_val in case_data["suspects_template"].items():
+                r_id = s_val["room"]
+                st.session_state.ROOMS[r_id]["suspects"].append(s_id)
+                
+            st.session_state.feedback = f"Offline Case Loaded: {case_data['title']}"
+            
+        st.session_state.current_room = "foyer"
+        st.session_state.collected_clue_ids = []
+        st.session_state.clues_found = []
+        st.session_state.interrogated_suspects = []
+        st.session_state.resolved_contradictions = []
+        st.session_state.custom_notes = ""
+        st.session_state.visited_rooms = ["foyer"]
+        st.session_state.plot_twist_triggered = False
+        st.session_state.plot_twist_data = None
+        st.session_state.audio_trigger = None
+        st.session_state.game_over = False
+        st.session_state.game_over_reason = None
+        st.session_state.interrogated_dialogues = []
+        update_difficulty()
         st.session_state.initialized = True
 
 def update_difficulty():
-    score = st.session_state.detective_score
-    if score <= 50:
+    skill = st.session_state.get("player_skill", "Beginner (Easier)")
+    if "Beginner" in skill:
         st.session_state.difficulty_level = "Beginner"
-    elif score <= 150:
+    elif "Intermediate" in skill:
         st.session_state.difficulty_level = "Intermediate"
     else:
         st.session_state.difficulty_level = "Advanced"
@@ -798,7 +801,8 @@ base_states = {
     "game_over": False,
     "game_over_reason": None,
     "plot_twist_triggered": False,
-    "plot_twist_data": None
+    "plot_twist_data": None,
+    "difficulty_level": "Beginner"
 }
 for key, default in base_states.items():
     if key not in st.session_state:
@@ -820,6 +824,25 @@ new_theme = "light" if theme_mode else "dark"
 if new_theme != st.session_state.theme:
     st.session_state.theme = new_theme
     st.rerun()
+
+# Skill Selection
+skill_options = ["Beginner (Easier)", "Intermediate (Moderate)", "Advanced (Hard)"]
+sel_skill = st.sidebar.selectbox("Select Player Skill Level:", skill_options, index=skill_options.index(st.session_state.player_skill))
+if sel_skill != st.session_state.player_skill:
+    st.session_state.player_skill = sel_skill
+    update_difficulty()
+    st.rerun()
+
+# Case Selection (if multiple cases unlocked)
+if st.session_state.get("unlocked_case_index", 0) > 0 and not st.session_state.get("is_ai_case", False):
+    case_options = [f"Case {i+1}: {OFFLINE_CASES_DB[i]['title']}" for i in range(st.session_state.unlocked_case_index + 1)]
+    sel_case = st.sidebar.selectbox("Select Playable Case:", case_options, index=st.session_state.current_case_index)
+    sel_case_idx = case_options.index(sel_case)
+    if sel_case_idx != st.session_state.current_case_index:
+        st.session_state.current_case_index = sel_case_idx
+        init_game_state(force_reset=True, custom_api_key=load_api_key())
+        st.rerun()
+
 
 # Detective metrics
 st.sidebar.markdown(f"**Detective Rank:**")
@@ -847,15 +870,8 @@ else:
     prev_limit, next_limit = 181, 181
 
 st.sidebar.markdown(f"<div class='hud-badge'>{rank}</div>", unsafe_allow_html=True)
-
-# Progress bar
-if next_rank != "MAX RANK":
-    progress_val = min(1.0, max(0.0, (score - prev_limit) / (next_limit - prev_limit)))
-    st.sidebar.progress(progress_val)
-    st.sidebar.caption(f"Score: {score} pts ({score}/{next_limit} to {next_rank})")
-else:
-    st.sidebar.progress(1.0)
-    st.sidebar.caption(f"Score: {score} pts (MAX RANK REACHED)")
+st.sidebar.caption(f"Current Case Score: {score} pts")
+st.sidebar.caption(f"Cumulative Campaign Score: {st.session_state.get('cumulative_score', 0)} pts")
 
 st.sidebar.divider()
 
@@ -863,7 +879,24 @@ st.sidebar.divider()
 diff_color = {"Beginner": "green", "Intermediate": "orange", "Advanced": "red"}[st.session_state.difficulty_level]
 st.sidebar.markdown(f"**Difficulty Level:** <span style='color:{diff_color}; font-weight:bold;'>{st.session_state.difficulty_level}</span>", unsafe_allow_html=True)
 
+# 1. Detective Checklist
+st.sidebar.divider()
+st.sidebar.markdown("### 📋 Detective's Checklist")
+
+total_rooms = len(st.session_state.ROOMS)
+rooms_visited = len(st.session_state.visited_rooms)
+clues_found_count = len(st.session_state.collected_clue_ids)
+total_clues = len(st.session_state.CLUES)
+suspects_met = len(st.session_state.interrogated_suspects)
+contradictions_solved = len(st.session_state.resolved_contradictions)
+
+st.sidebar.markdown(f"{'✅' if rooms_visited == total_rooms else '⬜'} **Visit all rooms:** `{rooms_visited} / {total_rooms}`")
+st.sidebar.markdown(f"{'✅' if suspects_met == 3 else '⬜'} **Interrogate all suspects:** `{suspects_met} / 3`")
+st.sidebar.markdown(f"{'✅' if clues_found_count == total_clues else '⬜'} **Discover all clues:** `{clues_found_count} / {total_clues}`")
+st.sidebar.markdown(f"{'✅' if contradictions_solved == 3 else '⬜'} **Expose all alibis:** `{contradictions_solved} / 3`")
+
 # Custom Case Notes Text Area
+st.sidebar.divider()
 st.sidebar.markdown("### 📓 Case Notes")
 notes_val = st.sidebar.text_area("Write custom notes:", st.session_state.custom_notes, height=200)
 if notes_val != st.session_state.custom_notes:
@@ -881,6 +914,9 @@ if st.sidebar.button("Restart Mystery (Regen Case)"):
                 f.write(f"GEMINI_API_KEY={api_val}\n")
         except Exception:
             pass
+    st.session_state.current_case_index = 0
+    st.session_state.unlocked_case_index = 0
+    st.session_state.cumulative_score = 0
     init_game_state(force_reset=True, custom_api_key=api_val)
     st.rerun()
 
@@ -913,7 +949,7 @@ if st.session_state.game_over:
         st.success("🎉 CASE SOLVED! You arrested the correct killer with perfect weapon and proof evidence!")
         play_chime = "success"
     else:
-        st.error(f"❌ CASE CLOSED - UNSOLVED. Reason: {st.session_state.game_over_reason.upper()}")
+        st.error("❌ CASE CLOSED - UNSOLVED. You ran out of attempts!")
         play_chime = "failure"
 
     # Show Final closing card
@@ -932,7 +968,7 @@ if st.session_state.game_over:
             </tr>
             <tr style="border-bottom: 1px solid #333; height: 35px;">
                 <td><strong>Clues Discovered:</strong></td>
-                <td style="text-align: right;">{len(st.session_state.collected_clue_ids)} / 7 clues</td>
+                <td style="text-align: right;">{len(st.session_state.collected_clue_ids)} / {len(st.session_state.CLUES)} clues</td>
             </tr>
             <tr style="border-bottom: 1px solid #333; height: 35px;">
                 <td><strong>Contradictions Solved:</strong></td>
@@ -950,55 +986,57 @@ if st.session_state.game_over:
     </div>
     """, unsafe_allow_html=True)
     
-    if st.button("Play Again / Generate New Mystery"):
-        init_game_state(force_reset=True, custom_api_key=api_val)
-        st.rerun()
+    if not success:
+        st.markdown(f"""
+        <div class="mystery-card" style="border: 2px solid #E74C3C; background-color: rgba(231, 76, 60, 0.05); padding: 15px 20px; border-radius: 6px; margin-bottom: 20px;">
+            <h3 style="margin-top: 0; color: #E74C3C !important; font-family: 'Georgia', serif;">🔍 Case Explanation</h3>
+            <p style="font-size: 15px; line-height: 1.6; font-style: italic; font-family: 'Georgia', serif;">
+                <strong>Correct Killer:</strong> {st.session_state.SUSPECTS[st.session_state.killer_id]['name']}<br>
+                <strong>Murder Weapon:</strong> {st.session_state.CLUES[st.session_state.weapon_clue_id]['name']}<br>
+                <strong>Key Proof:</strong> {st.session_state.CLUES[st.session_state.proof_clue_id]['name']}<br><br>
+                <strong>Explanation:</strong> {st.session_state.case_explanation}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🔄 Restart Case with New Details"):
+            init_game_state(force_reset=True, custom_api_key=api_val)
+            st.rerun()
+    else:
+        if st.session_state.current_case_index < 2:
+            if st.button(f"🔓 Unlock & Proceed to Case {st.session_state.current_case_index + 2}"):
+                st.session_state.cumulative_score += st.session_state.detective_score
+                st.session_state.current_case_index += 1
+                if st.session_state.current_case_index > st.session_state.unlocked_case_index:
+                    st.session_state.unlocked_case_index = st.session_state.current_case_index
+                init_game_state(force_reset=True, custom_api_key=api_val)
+                st.rerun()
+        else:
+            st.success("🏆 You've cracked the entire campaign! You are a master detective.")
+            if st.button("🔄 Reset Campaign"):
+                st.session_state.current_case_index = 0
+                st.session_state.unlocked_case_index = 0
+                st.session_state.cumulative_score = 0
+                init_game_state(force_reset=True, custom_api_key=api_val)
     st.stop()
-
-# 3. Toast Notifications for status updates
-if st.session_state.feedback:
-    st.info(f"🔎 {st.session_state.feedback}")
-    st.session_state.feedback = ""
 
 # 4. Check for Plot Twist
 if st.session_state.plot_twist_triggered and st.session_state.plot_twist_data:
     twist = st.session_state.plot_twist_data
+    scores = get_score_values()
     st.markdown(f"""
     <div class="mystery-card" style="border: 2px solid #E74C3C; background-color: rgba(231, 76, 60, 0.1);">
         <h3 style="color:#E74C3C !important; margin-top:0;">💥 PLOT TWIST: {twist['title']}</h3>
         <p><strong>Twist Type:</strong> <span class="hud-badge">{twist['type']}</span></p>
         <p style="font-size:15px; font-style:italic;">{twist['description']}</p>
-        <p style="font-size:12px; color:#2ECC71;">+15 Detective Points awarded! Case notes updated.</p>
+        <p style="font-size:12px; color:#2ECC71;">+{scores['twist']} Detective Points awarded! Case notes updated.</p>
     </div>
     """, unsafe_allow_html=True)
 
-# 5. Core Interface columns (Unified Single-page Dashboard)
-col_investigate, col_notebook = st.columns([1.1, 0.9])
+# 5. Core Interface Tabs
+tab_investigate, tab_notebook, tab_accusation = st.tabs(["🔍 Explore & Interrogate", "📓 Case Notebook", "⚖️ Accusation Chamber"])
 
-with col_investigate:
-    # Quick Investigator Guide
-    with st.expander("📖 Basic Guide: How to Play the Game", expanded=True):
-        st.markdown("""
-        ### 🕵️‍♂️ Detective Field Guide
-        Welcome to the investigation! Follow these basic steps to crack the case:
-        
-        1. **🧭 Explore the Manor**:
-           Look at the **Manor Map** and use the travel buttons at the bottom of the screen to move from room to room. Different suspects and clues are scattered across the manor.
-        
-        2. **🔍 Search for Evidence**:
-           Inside any room, click **"Search room for clues"** to scour the area. If you find any clues, they will be added to your **Evidence Locker** (under the Notebook on the right). Finding clues increases your score (+10 pts).
-        
-        3. **🗣️ Cross-Examine Suspects**:
-           If suspects are present in a room, click **"Interrogate"** to question them. You can ask them about their alibis, motives, or ask them about specific clues you have found.
-        
-        4. **🧩 Solve Alibi Contradictions (Crucial!)**:
-           Suspects will lie to cover their tracks. If you question a suspect about an item that disproves their alibi, you will break their alibi! This awards **+20 Detective Points** and unlocks their confession.
-        
-        5. **⚖️ Accuse the Suspect**:
-           Once you are confident, go to the **Accusation Chamber** on the right side. Select the correct **Killer**, the **Weapon**, and the **Embezzlement/Key Proof**. 
-           * **⚠️ CAUTION:** A wrong accusation is costly and will deduct **-10 Detective Points** (if you have enough points)!
-        """)
-
+with tab_investigate:
     room_id = st.session_state.current_room
     room = st.session_state.ROOMS[room_id]
     
@@ -1017,7 +1055,8 @@ with col_investigate:
             if c_id not in st.session_state.collected_clue_ids:
                 st.session_state.collected_clue_ids.append(c_id)
                 st.session_state.clues_found.append(st.session_state.CLUES[c_id]["name"])
-                st.session_state.detective_score += 10
+                scores = get_score_values()
+                st.session_state.detective_score += scores["clue"]
                 found_new = True
                 found_clues_list.append(st.session_state.CLUES[c_id]["name"])
                 
@@ -1025,7 +1064,7 @@ with col_investigate:
         
         if found_new:
             st.session_state.audio_trigger = "clue"
-            st.session_state.feedback = f"You found clues: {', '.join(found_clues_list)}! (+10 pts each)"
+            st.session_state.feedback = f"You found clues: {', '.join(found_clues_list)}! (+{get_score_values()['clue']} pts each)"
             
             # Check Plot Twist threshold (>= 3 clues)
             if len(st.session_state.collected_clue_ids) >= 3 and not st.session_state.plot_twist_triggered:
@@ -1057,8 +1096,9 @@ with col_investigate:
                 st.session_state.active_interrogation = s_id
                 if s_id not in st.session_state.interrogated_suspects:
                     st.session_state.interrogated_suspects.append(s_id)
-                    st.session_state.detective_score += 5
-                    st.session_state.feedback = f"First meeting with {suspect['name']}! (+5 pts)"
+                    scores = get_score_values()
+                    st.session_state.detective_score += scores["suspect"]
+                    st.session_state.feedback = f"First meeting with {suspect['name']}! (+{scores['suspect']} pts)"
                     update_difficulty()
                     st.rerun()
     else:
@@ -1090,10 +1130,13 @@ with col_investigate:
         if st.button("Ask Suspect", use_container_width=True):
             # Interrogation dynamics checks
             is_about_other = q_key.startswith("about_") and not any(c in q_key for c in st.session_state.CLUES)
+            skill = st.session_state.player_skill
             
-            if (st.session_state.difficulty_level in ["Intermediate", "Advanced"]) and q_key == "secret" and len(st.session_state.collected_clue_ids) < 2:
-                ans = "I don't trust you enough to share private secrets, detective. Find more evidence first."
-            elif st.session_state.difficulty_level == "Advanced" and is_about_other:
+            if "Intermediate" in skill and q_key == "secret" and len(st.session_state.collected_clue_ids) < 2:
+                ans = "I don't trust you enough to share private secrets, detective. Find more evidence first (needs 2+ clues)."
+            elif "Advanced" in skill and q_key == "secret" and len(st.session_state.collected_clue_ids) < 3:
+                ans = "You have no real evidence to query my secrets! Go find more proof first (needs 3+ clues)."
+            elif "Advanced" in skill and is_about_other:
                 ans = "How dare you ask me to gossip or accuse others! This interrogation is over!"
                 st.session_state.active_interrogation = None
             else:
@@ -1107,22 +1150,24 @@ with col_investigate:
                     
                 if is_contradiction:
                     contr_id = f"{active_id}_{q_key}"
+                    scores = get_score_values()
                     if contr_id not in st.session_state.resolved_contradictions:
                         st.session_state.resolved_contradictions.append(contr_id)
-                        st.session_state.detective_score += 20
+                        st.session_state.detective_score += scores["contradiction"]
                         st.session_state.audio_trigger = "contradiction"
-                        st.session_state.feedback = f"Alibi Broken! caught contradiction in {active_suspect['name']}'s statements (+20 pts)!"
+                        st.session_state.feedback = f"Alibi Broken! caught contradiction in {active_suspect['name']}'s statements (+{scores['contradiction']} pts)!"
                         update_difficulty()
-                        ans = ans.replace("[CONTRADICTION FOUND!]", "[CONTRADICTION FOUND!]")
+                        ans = ans.replace("[CONTRADICTION FOUND!]", f"🔴 **[CONTRADICTION FOUND! +{scores['contradiction']} Points]**")
                     else:
-                        ans = ans.replace("[CONTRADICTION FOUND!]", "[CONTRADICTION ALREADY RESOLVED]")
+                        ans = ans.replace("[CONTRADICTION FOUND!]", "🟡 **[CONTRADICTION ALREADY RESOLVED]**")
 
             # Save question response log
-            st.session_state.interrogated_dialogues.insert(0, {
-                "suspect": active_suspect["name"],
-                "question": selected_q_label,
-                "answer": ans
-            })
+            if st.session_state.active_interrogation:
+                st.session_state.interrogated_dialogues.insert(0, {
+                    "suspect": active_suspect["name"],
+                    "question": selected_q_label,
+                    "answer": ans
+                })
             st.rerun()
 
         # Display dialogue responses logs
@@ -1143,7 +1188,7 @@ with col_investigate:
         unfound = clue_count - found_count
         
         btn_label = f"🚪 Go to {conn_name.split('(')[0].strip()}"
-        if unfound > 0 and st.session_state.difficulty_level == "Beginner":
+        if unfound > 0 and "Beginner" in st.session_state.player_skill:
             btn_label += f" ({unfound} 🔍)"
             
         with cols_nav[idx]:
@@ -1153,30 +1198,14 @@ with col_investigate:
                 st.session_state.feedback = f"You entered {st.session_state.ROOMS[conn]['name']}."
                 st.rerun()
 
-    # Beginner hints
-    if st.session_state.difficulty_level == "Beginner":
-        st.info("💡 **Beginner Hint:** Check the Study first for the weapon, then search the Library for finances. Confront suspects with items that break their alibis!")
+    # Skill Level Guidance hints
+    skill = st.session_state.player_skill
+    if "Beginner" in skill:
+        st.info("💡 **Beginner Hint:** Check the Study first for the weapon, then search the Library/Lounge. Confront suspects with items that break their alibis!")
+    elif "Intermediate" in skill:
+        st.info("💡 **Intermediate Hint:** Analyze suspect statements to locate conflicting physical clues. You can unlock hints in the Notebook tab if you get stuck.")
 
-with col_notebook:
-    # 1. Detective Checklist
-    st.markdown("### 📋 Detective's Checklist")
-    
-    total_rooms = len(st.session_state.ROOMS)
-    if "visited_rooms" not in st.session_state:
-        st.session_state.visited_rooms = ["foyer"]
-    if st.session_state.current_room not in st.session_state.visited_rooms:
-        st.session_state.visited_rooms.append(st.session_state.current_room)
-        
-    rooms_visited = len(st.session_state.visited_rooms)
-    clues_found_count = len(st.session_state.collected_clue_ids)
-    suspects_met = len(st.session_state.interrogated_suspects)
-    contradictions_solved = len(st.session_state.resolved_contradictions)
-    
-    st.markdown(f"🧭 **Rooms Visited:** `{rooms_visited} / {total_rooms}`")
-    st.markdown(f"👥 **Suspects Met:** `{suspects_met} / 3`")
-    st.markdown(f"🎒 **Clues Discovered:** `{clues_found_count} / 7`")
-    st.markdown(f"🧩 **Alibi Contradictions Resolved:** `{contradictions_solved} / 3`")
-    
+with tab_notebook:
     # 2. Evidence Locker
     st.markdown("### 🎒 Evidence Locker")
     if st.session_state.collected_clue_ids:
@@ -1187,19 +1216,10 @@ with col_notebook:
                 if c_id in r["clues"]:
                     clue_room = r["name"]
                     break
-            if clue_room == "Unknown" and c_id in ["whiskey_glass", "will_papers", "pearl_earring"]:
-                clue_room = "The Study (CRIME SCENE)"
-            elif clue_room == "Unknown" and c_id == "ledger_page":
-                clue_room = "The Library"
-            elif clue_room == "Unknown" and c_id == "latex_glove":
-                clue_room = "The Conservatory"
-            elif clue_room == "Unknown" and c_id in ["bookie_letter", "billiard_cover"]:
-                clue_room = "The Lounge"
-                
             st.markdown(f"🔎 **{clue['name']}** *(Found in: {clue_room})*")
             st.markdown(f"<p style='font-size:12px; margin: -5px 0 5px 15px; opacity:0.8; font-style:italic;'>{clue['description']}</p>", unsafe_allow_html=True)
     else:
-        st.info("No clues discovered yet. Move to rooms like the Study and search for evidence.")
+        st.info("No clues discovered yet. Search rooms to collect evidence.")
 
     # 3. Suspect Dossiers
     st.markdown("### 👥 Suspect Dossiers")
@@ -1233,7 +1253,6 @@ with col_notebook:
                     if contradiction_clue_id:
                         response = suspect["dialogue"].get(f"about_{contradiction_clue_id}", "")
                         clean_resp = response.replace("[CONTRADICTION FOUND!]", "").replace("[CONTRADICTION ALREADY RESOLVED]", "").strip()
-                        clean_resp = clean_resp.replace(st.session_state.theme, "")
                         st.error(f"Broken Confession: \"{clean_resp}\"")
 
     # 4. Crime Scene Dossier (Floor Plan)
@@ -1245,13 +1264,51 @@ with col_notebook:
         
         **Coroner Report:**
         - **Estimated Time of Death:** 9:00 PM
-        - **Cause of Death:** Cardiac/respiratory failure induced by Aconite poison slipped into a crystal whiskey glass.
+        - **Cause of Death:** Trauma or poisoning as detailed in the case file.
         """)
         render_study_diagram()
 
-    # 5. Accusation Chamber
+    # 5. Hints Section
+    st.markdown("### 💡 Case Hints")
+    skill = st.session_state.player_skill
+    if "Beginner" in skill:
+        hint_cost = 3
+        max_hints = 5
+    elif "Intermediate" in skill:
+        hint_cost = 5
+        max_hints = 3
+    else:
+        hint_cost = 7.5
+        max_hints = 2
+        
+    hints_pool = get_hints_pool()
+    unlocked = st.session_state.unlocked_hints_count
+    
+    st.write(f"Hints unlocked: `{unlocked} / {max_hints}` (Each hint costs **{hint_cost}** points)")
+    
+    if unlocked < max_hints:
+        if st.button(f"💡 Unlock Hint (Costs {hint_cost} pts)", key="unlock_hint_btn_ui"):
+            if st.session_state.detective_score >= hint_cost:
+                st.session_state.detective_score -= hint_cost
+                st.session_state.unlocked_hints_count += 1
+                st.session_state.feedback = f"Hint unlocked! {hint_cost} points deducted."
+                st.rerun()
+            else:
+                st.error("Not enough points to unlock a hint!")
+                
+    if unlocked > 0:
+        for idx in range(unlocked):
+            st.info(f"Hint {idx+1}: {hints_pool[idx]}")
+            
+    # Hidden Hint for Advanced Players
+    if "Advanced" in skill and len(st.session_state.resolved_contradictions) >= 2:
+        hidden_hint = OFFLINE_CASES_DB[st.session_state.current_case_index]["hidden_hint"] if not st.session_state.get("is_ai_case", False) else "A hidden diary entry directly links the killer to the murder weapon. Re-examine the contradictions!"
+        st.warning(f"🔒 **SPECIAL BONUS HINT UNLOCKED (Task Complete):** {hidden_hint}")
+
+with tab_accusation:
     st.markdown("### ⚖️ Accusation Chamber")
-    st.warning("⚠️ **Accusation Rules:** You must select the correct killer, weapon, and key proof. An incorrect guess will cause the killer to escape!")
+    st.warning("⚠️ **Accusation Rules:** You must select the correct killer, weapon, and key proof. You have a maximum of 2 attempts! Each wrong accusation costs -5 points.")
+    st.write(f"**Attempts Remaining:** `{2 - st.session_state.accusation_attempts} / 2`")
     
     if not st.session_state.collected_clue_ids:
         st.info("You must gather at least some clues before you can make an accusation.")
@@ -1289,19 +1346,16 @@ with col_notebook:
                 st.session_state.game_over = True
                 st.session_state.game_over_reason = "won"
                 st.session_state.audio_trigger = "success"
+                st.session_state.feedback = "Success! Case Solved!"
             else:
-                # Wrong accusation: deduct 10 points if enough points
-                deduct = 0
-                if st.session_state.detective_score >= 10:
-                    st.session_state.detective_score -= 10
-                    deduct = 10
-                else:
-                    st.session_state.detective_score = 0
-                    
+                st.session_state.accusation_attempts += 1
+                st.session_state.detective_score -= 5
                 st.session_state.audio_trigger = "failure"
-                if deduct > 0:
-                    st.session_state.feedback = f"Incorrect Accusation! The suspect has an alibi or the evidence doesn't match up. You lost {deduct} points. Try again!"
+                
+                if st.session_state.accusation_attempts >= 2:
+                    st.session_state.game_over = True
+                    st.session_state.game_over_reason = "failed"
+                    st.session_state.feedback = "Incorrect Accusation! Case failed."
                 else:
-                    st.session_state.feedback = "Incorrect Accusation! The suspect has an alibi or the evidence doesn't match up. (You have 0 points, so no score was deducted). Try again!"
-                update_difficulty()
+                    st.session_state.feedback = "Incorrect Accusation! You have 1 attempt remaining. 5 points deducted."
             st.rerun()

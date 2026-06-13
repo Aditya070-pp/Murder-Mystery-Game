@@ -18,6 +18,13 @@ import random
 import urllib.request
 import json
 import threading
+from cases import OFFLINE_CASES_DB
+
+try:
+    import sys
+    sys.stdout.reconfigure(encoding='utf-8')
+except Exception:
+    pass
 
 # --- ANSI escape codes for coloring console text ---
 RESET = "\033[0m"
@@ -197,9 +204,19 @@ interrogated_suspects = []   # LIST: Suspect IDs interrogated
 resolved_contradictions = [] # LIST: Tracks which contradictions the player has solved
 custom_notes = []            # LIST: Custom player notes
 visited_rooms = []           # LIST: Track visited rooms for thought monologues
-detective_score = 0          # Score tracking points
+detective_score = 15          # Score tracking points
 difficulty_level = "Beginner" # Dynamic difficulty state
 plot_twist_triggered = False  # Track if plot twist has occurred
+
+current_case_index = 0
+unlocked_case_index = 0
+cumulative_score = 0
+player_skill = "Beginner (Easier)"
+is_ai_case = False
+case_explanation = ""
+case_title = ""
+accusation_attempts = 0
+unlocked_hints_count = 0
 
 # Dynamic target keys (configured dynamically by Gemini AI or default offline case)
 killer_id = "dr_croft"
@@ -212,6 +229,35 @@ CONTRADICTIONS = {
     "arthur": "billiard_cover",
     "dr_croft": "latex_glove"
 }
+
+def get_score_values():
+    if "Beginner" in player_skill:
+        return {"clue": 15, "suspect": 10, "contradiction": 25, "twist": 20, "wrong_accuse": -5}
+    elif "Intermediate" in player_skill:
+        return {"clue": 10, "suspect": 5, "contradiction": 20, "twist": 15, "wrong_accuse": -5}
+    else: # Advanced (Hard)
+        return {"clue": 5, "suspect": 2, "contradiction": 10, "twist": 10, "wrong_accuse": -5}
+
+def get_hints_pool():
+    if not is_ai_case:
+        return OFFLINE_CASES_DB[current_case_index]["hints"]
+    else:
+        suspect_ids = list(SUSPECTS.keys())
+        hints = []
+        w_name = CLUES.get(weapon_clue_id, {}).get("name", "murder weapon")
+        hints.append(f"The crime scene is the Study. Search it first to find the murder weapon: {w_name}.")
+        
+        for s_id in suspect_ids[:3]:
+            s_name = SUSPECTS[s_id]["name"]
+            alibi = SUSPECTS[s_id]["alibi"]
+            contr_id = CONTRADICTIONS.get(s_id, "")
+            contr_name = CLUES.get(contr_id, {}).get("name", "contradictory evidence")
+            hints.append(f"{s_name} claims: '{alibi}'. Look for {contr_name} to break their alibi.")
+            
+        p_name = CLUES.get(proof_clue_id, {}).get("name", "key proof")
+        k_name = SUSPECTS.get(killer_id, {}).get("name", "the killer")
+        hints.append(f"The key proof linking the killer is the {p_name}. It links {k_name} to the murder scene.")
+        return hints
 
 # ==============================================================================
 # 4. HELPER FUNCTIONS
@@ -511,24 +557,60 @@ def initialize_game():
     """Initializes the mystery scenario using Gemini AI or falls back to default case."""
     global victim_name, victim_desc, CLUES, SUSPECTS, ROOMS
     global killer_id, weapon_clue_id, proof_clue_id, CONTRADICTIONS
+    global case_explanation, case_title, current_room, collected_clue_ids, clues_found
+    global interrogated_suspects, resolved_contradictions, visited_rooms
+    global plot_twist_triggered, detective_score, accusation_attempts, unlocked_hints_count
+    global is_ai_case, player_skill, current_case_index, unlocked_case_index, custom_notes
+    
+    # 1. Ask player for skill level if first case
+    print_banner("SELECT DETECTIVE SKILL LEVEL")
+    print("  [1] Beginner (Easier Difficulty)")
+    print("  [2] Intermediate (Moderate Difficulty)")
+    print("  [3] Advanced (Hard Difficulty)")
+    try:
+        skill_choice = input(f"\n{BOLD}Select skill (1-3) [Default 1]:{RESET} ").strip()
+    except Exception:
+        skill_choice = "1"
+    if skill_choice == "2":
+        player_skill = "Intermediate (Moderate)"
+    elif skill_choice == "3":
+        player_skill = "Advanced (Hard)"
+    else:
+        player_skill = "Beginner (Easier)"
+        
+    update_difficulty()
+    
+    # Starting score
+    detective_score = 15
+    accusation_attempts = 0
+    unlocked_hints_count = 0
+    
+    # State reset
+    current_room = "foyer"
+    collected_clue_ids = []
+    clues_found = []
+    interrogated_suspects = []
+    resolved_contradictions = []
+    visited_rooms = ["foyer"]
+    plot_twist_triggered = False
+    custom_notes = []
     
     api_key = load_api_key()
-    
-    if not api_key:
-        print(f"\n{YELLOW}No Gemini API key found in env or .env file.{RESET}")
-        api_key = input(f"{BOLD}Enter Gemini API key (or press Enter for default offline mystery):{RESET} ").strip()
-        if api_key:
-            try:
-                with open(".env", "w", encoding="utf-8") as f:
-                    f.write(f"GEMINI_API_KEY={api_key}\n")
-                print(f"{GREEN}API key saved to .env file!{RESET}")
-            except Exception:
-                pass
-                
     if api_key:
-        print(f"\n{CYAN}Connecting to Gemini AI to construct a dynamic mystery...{RESET}")
+        print(f"\n{CYAN}Gemini API Key detected. Do you want to play a dynamic Gemini case?{RESET}")
+        try:
+            choice = input(f"{BOLD}Enter 'y' for dynamic AI case, or press Enter for offline campaign case:{RESET} ").strip().lower()
+        except Exception:
+            choice = ""
+        if choice == "y":
+            is_ai_case = True
+        else:
+            is_ai_case = False
+    else:
+        is_ai_case = False
         
-        # Query Gemini in a background thread to run the spinner animation in the main thread
+    if is_ai_case:
+        print(f"\n{CYAN}Connecting to Gemini AI to construct a dynamic mystery...{RESET}")
         result = {"data": None}
         def query_thread():
             result["data"] = generate_ai_case(api_key)
@@ -536,7 +618,6 @@ def initialize_game():
         t = threading.Thread(target=query_thread)
         t.start()
         
-        # Spinning loading wheel
         chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         idx = 0
         while t.is_alive():
@@ -549,41 +630,34 @@ def initialize_game():
         
         if ai_data:
             try:
-                # 1. Parse everything first into temporary variables (Transactional safety)
                 temp_victim_name = ai_data["victim"]["name"]
                 temp_victim_desc = ai_data["victim"]["desc"]
                 temp_clues = ai_data["clues"]
                 temp_suspects = ai_data["suspects"]
-                
                 temp_killer_id = ai_data["killer_id"]
                 temp_weapon_clue_id = ai_data["weapon_clue_id"]
                 temp_proof_clue_id = ai_data["proof_clue_id"]
+                temp_explanation = ai_data.get("explanation", "The suspect is the killer, linked by the weapon and key proof.")
                 
-                # Check target keys exist to avoid KeyError later
                 if temp_killer_id not in temp_suspects:
-                    raise KeyError(f"killer_id '{temp_killer_id}' is not in suspects list")
+                    raise KeyError("Killer ID not in suspects")
                 if temp_weapon_clue_id not in temp_clues:
-                    raise KeyError(f"weapon_clue_id '{temp_weapon_clue_id}' is not in clues list")
+                    raise KeyError("Weapon ID not in clues")
                 if temp_proof_clue_id not in temp_clues:
-                    raise KeyError(f"proof_clue_id '{temp_proof_clue_id}' is not in clues list")
-                
-                # Support dynamic suspect contradiction mapping
+                    raise KeyError("Proof ID not in clues")
+                    
                 temp_contradictions = {}
                 suspect_keys = list(temp_suspects.keys())
                 clue_keys = list(temp_clues.keys())
                 
                 for i, s_key in enumerate(suspect_keys):
-                    # Try to match the suspect's contradiction clue from response fields
-                    # (e.g. suspect_1_contradiction_clue_id) or fallback dynamically
                     field_name = f"suspect_{i+1}_contradiction_clue_id"
                     contradiction_clue = ai_data.get(field_name)
                     if contradiction_clue and contradiction_clue in temp_clues:
                         temp_contradictions[s_key] = contradiction_clue
                     else:
-                        # Fallback: assign a distinct clue (at index i + 2, wrapping if necessary)
                         temp_contradictions[s_key] = clue_keys[min(len(clue_keys)-1, i + 2)]
                 
-                # 2. Overwrite global database variables now that parsing succeeded
                 victim_name = temp_victim_name
                 victim_desc = temp_victim_desc
                 CLUES = temp_clues
@@ -592,19 +666,53 @@ def initialize_game():
                 weapon_clue_id = temp_weapon_clue_id
                 proof_clue_id = temp_proof_clue_id
                 CONTRADICTIONS = temp_contradictions
+                case_explanation = temp_explanation
+                case_title = f"AI Dynamic Case: {temp_victim_name}"
                 
-                # 3. Clear and redistribute clues & suspects into rooms
-                for r_id in ROOMS:
-                    ROOMS[r_id]["clues"] = []
-                    ROOMS[r_id]["suspects"] = []
-                    
+                ROOMS = {
+                    "foyer": {
+                        "name": "The Foyer",
+                        "description": "The grand entrance hall of the manor.",
+                        "connections": ["study", "library", "lounge", "conservatory"],
+                        "clues": [],
+                        "suspects": []
+                    },
+                    "study": {
+                        "name": "The Study (CRIME SCENE)",
+                        "description": "The official CRIME SCENE where the body was found slumped at the desk.",
+                        "connections": ["foyer", "library"],
+                        "clues": [],
+                        "suspects": []
+                    },
+                    "library": {
+                        "name": "The Library",
+                        "description": "A quiet library filled with tall bookshelves.",
+                        "connections": ["foyer", "study"],
+                        "clues": [],
+                        "suspects": []
+                    },
+                    "conservatory": {
+                        "name": "The Conservatory",
+                        "description": "A glass greenhouse filled with damp air.",
+                        "connections": ["foyer"],
+                        "clues": [],
+                        "suspects": []
+                    },
+                    "lounge": {
+                        "name": "The Lounge",
+                        "description": "A comfortable room containing armchairs.",
+                        "connections": ["foyer"],
+                        "clues": [],
+                        "suspects": []
+                    }
+                }
+                
                 for c_id, clue_data in CLUES.items():
                     r_id = clue_data.get("room", "study").lower().strip()
                     if r_id not in ROOMS:
                         r_id = "study"
                     ROOMS[r_id]["clues"].append(c_id)
                     
-                # Distribute suspect IDs dynamically to rooms
                 target_rooms = ["library", "lounge", "conservatory"]
                 for i, s_key in enumerate(suspect_keys):
                     r_id = target_rooms[i % len(target_rooms)]
@@ -615,12 +723,77 @@ def initialize_game():
                 return
             except Exception as e:
                 print(f"\n{RED}Error parsing AI case details: {e}. Loading offline case.{RESET}")
+                is_ai_case = False
                 time.sleep(2)
         else:
             print(f"\n{YELLOW}AI generation failed. Loading offline case.{RESET}")
+            is_ai_case = False
             time.sleep(2)
-            
-    print(f"\n{GREEN}Loading default offline case: The Secret of Blackwood Manor...{RESET}")
+
+    # Load offline case
+    case_data = OFFLINE_CASES_DB[current_case_index]
+    victim = random.choice(case_data["victim_pool"])
+    v_name = victim["name"]
+    v_desc = victim["desc"]
+    v_surname = v_name.split()[-1]
+    
+    suspect_ids = list(case_data["suspects_template"].keys())
+    killer = random.choice(suspect_ids)
+    
+    killer_info = case_data["killers"][killer]
+    proof_clue = killer_info["proof"]
+    explanation = killer_info["explanation"].format(victim_name=v_name, victim_surname=v_surname)
+    
+    victim_name = v_name
+    victim_desc = v_desc
+    killer_id = killer
+    weapon_clue_id = case_data["weapon_clue_id"]
+    proof_clue_id = proof_clue
+    case_explanation = explanation
+    case_title = case_data["title"]
+    CONTRADICTIONS = case_data["contradictions"]
+    
+    CLUES = {}
+    for c_id, c_val in case_data["clues_template"].items():
+        CLUES[c_id] = {
+            "name": c_val["name"],
+            "description": c_val["description"].format(victim_name=v_name, victim_surname=v_surname)
+        }
+        
+    SUSPECTS = {}
+    for s_id, s_val in case_data["suspects_template"].items():
+        formatted_dialogue = {}
+        for q_k, q_v in s_val["dialogue"].items():
+            formatted_dialogue[q_k] = q_v.format(victim_name=v_name, victim_surname=v_surname)
+        
+        SUSPECTS[s_id] = {
+            "name": s_val["name"].format(victim_surname=v_surname),
+            "role": s_val["role"],
+            "description": s_val["description"].format(victim_surname=v_surname),
+            "alibi": s_val["alibi"].format(victim_name=v_name),
+            "motive": s_val["motive"].format(victim_name=v_name),
+            "dialogue": formatted_dialogue
+        }
+    
+    ROOMS = {}
+    for r_id, r_val in case_data["rooms_templates"].items():
+        ROOMS[r_id] = {
+            "name": r_val["name"].format(victim_surname=v_surname),
+            "description": r_val["description"].format(victim_name=v_name, victim_surname=v_surname),
+            "connections": r_val["connections"],
+            "clues": [],
+            "suspects": []
+        }
+        
+    for c_id, c_val in case_data["clues_template"].items():
+        r_id = c_val["room"]
+        ROOMS[r_id]["clues"].append(c_id)
+        
+    for s_id, s_val in case_data["suspects_template"].items():
+        r_id = s_val["room"]
+        ROOMS[r_id]["suspects"].append(s_id)
+        
+    print(f"\n{GREEN}Loading Case {current_case_index + 1}: {case_data['title']}...{RESET}")
     time.sleep(2)
 
 def generate_plot_twist():
@@ -732,9 +905,10 @@ def generate_plot_twist():
     
     custom_notes.append(f"[PLOT TWIST - {twist_data['type']}] {twist_data['title']}: {twist_data['description']}")
     
-    detective_score += 15
+    scores = get_score_values()
+    detective_score += scores["twist"]
     update_difficulty()
-    print(f"\n{GREEN}* Case notes updated! +15 Detective Points *{RESET}")
+    print(f"\n{GREEN}* Case notes updated! +{scores['twist']} Detective Points *{RESET}")
     input("\nPress Enter to return to your investigation...")
 
 # ==============================================================================
@@ -745,32 +919,30 @@ def print_welcome():
     """Prints the welcome screen and introduction."""
     print_banner("THE SECRET OF BLACKWOOD MANOR", BLUE)
     intro_text = (
-        f"Welcome, Detective! You have been called to Blackwood Manor.\n\n"
-        f"🎬 THE CASE FILE: A Stormy Night at Blackwood Manor\n"
-        f"--------------------------------------------------\n"
-        f"The grandfather clock struck 9:00 PM on a rain-swept night, its chimes drowned out by the "
-        f"thunder shaking the heavy windows of Blackwood Manor. Seconds later, a chilling scream "
-        f"echoed from the private Study. {victim_name}, {victim_desc}, "
-        f"was found slumped lifelessly over his mahogany desk. The room was locked from the inside. "
-        f"On the desk sat a half-empty glass of crystal whiskey, emitting the faint, sweet scent "
-        f"of bitter almonds... Aconite poison, the silent killer.\n\n"
+        f"Welcome, Detective! You have been called to investigate Case {current_case_index + 1}: {case_title}.\n\n"
+        f"🎬 THE CASE FILE:\n"
+        f"----------------\n"
+        f"The grandfather clock struck 9:00 PM on a rain-swept night. A chilling scream "
+        f"echoed from the private study. {victim_name}, {victim_desc}, "
+        f"was found slumped lifelessly over the desk. The room was locked from the inside. "
+        f"On the desk lay clues and trace elements of the crime.\n\n"
         f"Three suspects remain in the manor, each hiding behind convenient alibis. You have stepped "
         f"through the doors as the lead investigator. Solve the murder before the storm passes!\n\n"
         f"🕵️‍♂️ DETECTIVE FIELD GUIDE:\n"
         f"- Move between rooms using navigate options.\n"
-        f"- Search rooms to discover clues (+10 points each).\n"
-        f"- Interrogate suspects about alibis, motives, and clues (+5 points on first meet).\n"
-        f"- Match clues to suspect lies to break alibis (+20 points each).\n"
+        f"- Search rooms to discover clues.\n"
+        f"- Interrogate suspects about alibis, motives, and clues.\n"
+        f"- Match clues to suspect lies to break alibis.\n"
         f"- Accuse the correct Killer, Weapon, and Proof in the Accusation Chamber.\n"
-        f"  ⚠️ CAUTION: Wrong accusations cost -10 points (if you have enough points)!\n\n"
-        f"As your score increases, the difficulty will scale from Beginner -> Intermediate -> Advanced."
+        f"  ⚠️ CAUTION: Wrong accusations cost -5 points and you have a maximum of 2 attempts!\n\n"
+        f"Current Player Skill: {player_skill}"
     )
     print_wrapped(intro_text)
     input(f"\n{YELLOW}Press Enter to start your investigation...{RESET}")
     clear_screen()
 
 def show_status():
-    """Displays HUD, difficulty, hints (Beginner), room info, and exits."""
+    """Displays HUD, difficulty, hints, room info, and exits."""
     room = ROOMS[current_room]
     update_difficulty()
     global visited_rooms
@@ -846,9 +1018,19 @@ def show_status():
         bar_empty = "░" * (20 - filled)
         progress_str = f"{BOLD}Rank:{RESET} {YELLOW}{current_rank}{RESET} | [{GREEN}{bar_filled}{RESET}{WHITE}{bar_empty}{RESET}] ({detective_score}/{next_limit} to {next_rank})"
 
-    print(f"  {BOLD}Detective Rank:{RESET} {color}{difficulty_level}{RESET} | "
+    print(f"  {BOLD}Detective Skill Level:{RESET} {color}{player_skill}{RESET} | "
           f"{BOLD}Score:{RESET} {GREEN}{detective_score} pts{RESET}")
     print(progress_str)
+    print(f"  {BOLD}Cumulative Score:{RESET} {cumulative_score} pts")
+    
+    # Checklist indicator
+    total_rooms = len(ROOMS)
+    rooms_v = len(visited_rooms)
+    clues_c = len(collected_clue_ids)
+    total_cl = len(CLUES)
+    sus_met = len(interrogated_suspects)
+    contr_sol = len(resolved_contradictions)
+    print(f"  {BOLD}Checklist Status:{RESET} Rooms: {rooms_v}/{total_rooms} | Suspects: {sus_met}/3 | Clues: {clues_c}/{total_cl} | Alibis Broken: {contr_sol}/3")
     print("-" * 60)
     print_wrapped(room["description"])
     print()
@@ -871,19 +1053,23 @@ def show_status():
         print(f"  -> {GREEN}{conn_name}{RESET} (type '{conn}')")
     print()
 
-    # Beginner hints
-    if difficulty_level == "Beginner":
-        print(f"{BLUE}{BOLD}Detective Hint:{RESET}")
-        if "whiskey_glass" not in collected_clue_ids:
+    # Guidance hints check
+    if "Beginner" in player_skill:
+        print(f"{BLUE}{BOLD}Detective Hint (Beginner):{RESET}")
+        if "whiskey_glass" not in collected_clue_ids and "ancient_rope" not in collected_clue_ids and "silenced_pistol" not in collected_clue_ids:
             print(" - Search the Study (Crime Scene) for clues about the murder weapon.")
-        elif "ledger_page" not in collected_clue_ids:
-            print(" - Search the Library for documents regarding the victim's finances.")
+        elif "ledger_page" not in collected_clue_ids and "smuggling_ledger" not in collected_clue_ids and "spy_ledger" not in collected_clue_ids:
+            print(" - Search the Library for financial documents or decrypted logs.")
         elif len(interrogated_suspects) < 3:
-            print(" - Make sure to move to rooms with suspects and interrogate them about their alibis.")
+            print(" - Move to rooms with suspects and interrogate them about their alibis.")
         elif len(resolved_contradictions) < 3:
-            print(" - Confront suspects by asking them about clues that break their alibis (e.g. ask Eleanor about her Earring).")
+            print(" - Confront suspects by asking them about clues that break their alibis.")
         else:
-            print(" - You have found contradictions and key evidence! Head to the Library to accuse the killer.")
+            print(" - You have found contradictions and key evidence! HEAD to final accusation.")
+        print()
+    elif "Intermediate" in player_skill:
+        print(f"{BLUE}{BOLD}Detective Hint (Intermediate):{RESET}")
+        print(" - Analyze suspect statements to locate conflicting physical clues. You can unlock hints in the Notebook if you get stuck.")
         print()
 
 def move_room():
@@ -898,7 +1084,15 @@ def move_room():
     options = {}
     for idx, conn in enumerate(room["connections"], 1):
         conn_name = ROOMS[conn]["name"]
-        options[str(idx)] = f"{conn_name}"
+        clue_count = len(ROOMS[conn]["clues"])
+        found_count = len([cid for cid in ROOMS[conn]["clues"] if cid in collected_clue_ids])
+        unfound = clue_count - found_count
+        
+        display_name = conn_name
+        if unfound > 0 and "Beginner" in player_skill:
+            display_name += f" ({unfound} 🔍)"
+        options[str(idx)] = display_name
+        
     options["0"] = "Stay Here (Cancel)"
     draw_menu(options, "NAVIGATION MENU - SELECT DESTINATION")
         
@@ -908,7 +1102,6 @@ def move_room():
         return
 
     target = None
-    # 1. Check if selection is an option index number
     try:
         choice_idx = int(choice)
         if 1 <= choice_idx <= len(room["connections"]):
@@ -916,7 +1109,6 @@ def move_room():
     except ValueError:
         pass
         
-    # 2. Check by name or ID matching
     if not target:
         for conn in room["connections"]:
             if choice == conn or choice == ROOMS[conn]["name"].lower() or choice.replace("the ", "") == ROOMS[conn]["name"].lower().replace("the ", ""):
@@ -939,7 +1131,6 @@ def search_room():
     
     clear_screen()
     print_banner(f"Searching {room['name']}...", YELLOW)
-        
     print_typewriter("You examine the surroundings, searching cupboards, bookshelves, and bins...", 0.02)
     
     room_clues = room["clues"]
@@ -952,28 +1143,12 @@ def search_room():
             clues_found.append(clue["name"])
             
             # Award points for finding clues
-            detective_score += 10
+            scores = get_score_values()
+            detective_score += scores["clue"]
             play_retro_chime("clue")
             
-            print(f"\n{GREEN}[NEW CLUE DISCOVERED! +10 Points] {BOLD}{clue['name']}{RESET}")
+            print(f"\n{GREEN}[NEW CLUE DISCOVERED! +{scores['clue']} Points] {BOLD}{clue['name']}{RESET}")
             print_wrapped(clue["description"], prefix="  ")
-            
-            # Dynamic detective thoughts
-            if clue_id == "whiskey_glass":
-                print_detective_thought("Trace almonds smell on the rim... Aconite, slipped into the glass.")
-            elif clue_id == "will_papers":
-                print_detective_thought(f"Eleanor stood to lose everything. That is a textbook motive for murder.")
-            elif clue_id == "ledger_page":
-                print_detective_thought("J.C. embezzled £50,000 from the charity. Croft had to silence him before he went public.")
-            elif clue_id == "bookie_letter":
-                print_detective_thought("Arthur's bookies are breathing down his neck. He needed his father's inheritance immediately.")
-            elif clue_id == "pearl_earring":
-                print_detective_thought("Eleanor's earring dropped right here in the study... she lied about never leaving the Library.")
-            elif clue_id == "billiard_cover":
-                print_detective_thought("This billiard cover is covered in dust. Arthur didn't hit a single ball tonight.")
-            elif clue_id == "latex_glove":
-                print_detective_thought("A doctor's glove containing traces of the poison... Croft was here.")
-                
             found_any = True
             
     if not found_any:
@@ -1029,8 +1204,9 @@ def interrogate_suspect():
     # Award points on first interrogation
     if suspect_id not in interrogated_suspects:
         interrogated_suspects.append(suspect_id)
-        detective_score += 5
-        print(f"\n{GREEN}[FIRST INTERROGATION! +5 Points] You begin questioning {suspect['name']}.{RESET}")
+        scores = get_score_values()
+        detective_score += scores["suspect"]
+        print(f"\n{GREEN}[FIRST INTERROGATION! +{scores['suspect']} Points] You begin questioning {suspect['name']}.{RESET}")
         time.sleep(1.5)
         
     while True:
@@ -1076,27 +1252,36 @@ def interrogate_suspect():
         question_label, dialogue_key = questions[choice - 1]
         
         # --- DIFFICULTY DYNAMICS ---
-        # 1. Intermediate/Advanced: Suspects refuse secrets if clues are less than 2
-        if (difficulty_level == "Intermediate" or difficulty_level == "Advanced") and dialogue_key == "secret" and len(collected_clue_ids) < 2:
+        # Refuse secrets based on player skill limits
+        if "Intermediate" in player_skill and dialogue_key == "secret" and len(collected_clue_ids) < 2:
             clear_screen()
             print_banner(f"Question: {question_label}", MAGENTA)
             print(f"{YELLOW}{suspect['name']}{RESET} responds:")
             print("-" * 60)
-            print_wrapped('"I don\'t trust you enough to share private secrets, detective. Find more evidence first."')
+            print_wrapped('"I don\'t trust you enough to share private secrets, detective. Find more evidence first (needs 2+ clues)."')
+            print("-" * 60)
+            input("\nPress Enter to continue...")
+            continue
+        elif "Advanced" in player_skill and dialogue_key == "secret" and len(collected_clue_ids) < 3:
+            clear_screen()
+            print_banner(f"Question: {question_label}", MAGENTA)
+            print(f"{YELLOW}{suspect['name']}{RESET} responds:")
+            print("-" * 60)
+            print_wrapped('"You have no real evidence to query my secrets! Go find more proof first (needs 3+ clues)."')
             print("-" * 60)
             input("\nPress Enter to continue...")
             continue
             
-        # 2. Advanced: Hostile suspects terminate conversation if asked about other suspects
+        # Terminate conversation if asking about other suspects in Advanced (Hard)
         is_about_other_suspect = False
         if dialogue_key.startswith("about_"):
-            target_key = dialogue_key[6:] # strip "about_"
+            target_key = dialogue_key[6:]
             for other_id in SUSPECTS:
                 if other_id != suspect_id and (other_id == target_key or other_id.split("_")[-1] == target_key):
                     is_about_other_suspect = True
                     break
                     
-        if difficulty_level == "Advanced" and is_about_other_suspect:
+        if "Advanced" in player_skill and is_about_other_suspect:
             clear_screen()
             print_banner(f"Question: {question_label}", MAGENTA)
             print(f"{YELLOW}{suspect['name']}{RESET} responds:")
@@ -1114,22 +1299,20 @@ def interrogate_suspect():
         is_contradiction = False
         contradiction_id = f"{suspect_id}_{dialogue_key}"
         
-        # Define alibi-breaking matches
         if dialogue_key.startswith("about_"):
-            clue_id_asked = dialogue_key[6:] # Strip "about_"
+            clue_id_asked = dialogue_key[6:]
             if suspect_id in CONTRADICTIONS and CONTRADICTIONS[suspect_id] == clue_id_asked:
                 is_contradiction = True
             
         if is_contradiction:
             if contradiction_id not in resolved_contradictions:
                 resolved_contradictions.append(contradiction_id)
-                detective_score += 20
+                scores = get_score_values()
+                detective_score += scores["contradiction"]
                 update_difficulty()
                 play_retro_chime("contradiction")
-                # Highlight points awarded
-                response = response.replace("[CONTRADICTION FOUND!]", f"{GREEN}[CONTRADICTION FOUND! +20 Points]{RESET}")
+                response = response.replace("[CONTRADICTION FOUND!]", f"{GREEN}[CONTRADICTION FOUND! +{scores['contradiction']} Points]{RESET}")
             else:
-                # Format without points if asked again
                 response = response.replace("[CONTRADICTION FOUND!]", f"{GREEN}[CONTRADICTION ALREADY RESOLVED]{RESET}")
             
         clear_screen()
@@ -1143,6 +1326,7 @@ def interrogate_suspect():
 
 def view_clues():
     """Allows players to view the Detective Notebook via a structured, boxed menu."""
+    global unlocked_hints_count, detective_score
     while True:
         clear_screen()
         print_banner("DETECTIVE NOTEBOOK", WHITE)
@@ -1152,18 +1336,18 @@ def view_clues():
             "2": "View Suspect Dossiers & Alibi Status",
             "3": "View Interactive Manor Map",
             "4": "View & Write Case Notes",
+            "5": "Unlock Case Hints",
             "0": "Return to Room"
         }
         draw_menu(options, "NOTEBOOK SUB-SECTIONS")
         
-        choice = input(f"\n{BOLD}Select a section (0-4):{RESET} ").strip()
+        choice = input(f"\n{BOLD}Select a section (0-5):{RESET} ").strip()
         
         if choice == "1":
-            # 1. View Collected Clues
             while True:
                 clear_screen()
                 print_banner("COLLECTED CLUES & EVIDENCE", GREEN)
-                print(f"{BOLD}--- COLLECTED CLUES ({len(collected_clue_ids)}/7) ---{RESET}\n")
+                print(f"{BOLD}--- COLLECTED CLUES ({len(collected_clue_ids)}/{len(CLUES)}) ---{RESET}\n")
                 if collected_clue_ids:
                     for idx, clue_id in enumerate(collected_clue_ids, 1):
                         clue = CLUES[clue_id]
@@ -1178,15 +1362,12 @@ def view_clues():
                 break
                 
         elif choice == "2":
-            # 2. View Suspect Dossiers
             while True:
                 clear_screen()
                 print_banner("SUSPECT DOSSIERS & ALIBIS", YELLOW)
                 print(f"{BOLD}--- SUSPECT FILES ---{RESET}\n")
                 for s_id, suspect in SUSPECTS.items():
                     met_status = f"{GREEN}[Met]{RESET}" if s_id in interrogated_suspects else f"{WHITE}[Unmet]{RESET}"
-                    
-                    # Check if alibi is broken dynamically
                     alibi_broken = any(cid.startswith(s_id) for cid in resolved_contradictions)
                     if s_id in interrogated_suspects:
                         if alibi_broken:
@@ -1202,12 +1383,10 @@ def view_clues():
                         print(f"   {WHITE}Alibi:{RESET} {suspect['alibi']}")
                         print(f"   {WHITE}Motive:{RESET} {suspect['motive']}")
                         if alibi_broken:
-                            # Print the broken confession dynamically
                             contradiction_clue_id = CONTRADICTIONS.get(s_id)
                             if contradiction_clue_id:
                                 response = suspect["dialogue"].get(f"about_{contradiction_clue_id}", "")
                                 clean_resp = response.replace("[CONTRADICTION FOUND!]", "").replace("[CONTRADICTION ALREADY RESOLVED]", "").strip()
-                                clean_resp = clean_resp.replace(GREEN, "").replace(RESET, "")
                                 print_wrapped(f"   {RED}Confession:{RESET} \"{clean_resp}\"")
                     print()
                 
@@ -1216,14 +1395,12 @@ def view_clues():
                 break
                 
         elif choice == "3":
-            # 3. View Manor Map
             clear_screen()
             draw_map()
             print()
             input("Press Enter to return to Notebook menu...")
             
         elif choice == "4":
-            # 4. Custom notes
             while True:
                 clear_screen()
                 print_banner("CUSTOM CASE NOTES", MAGENTA)
@@ -1249,6 +1426,59 @@ def view_clues():
                 elif note_choice == "0" or note_choice == "":
                     break
                     
+        elif choice == "5":
+            while True:
+                clear_screen()
+                print_banner("CASE HINTS LOG", BLUE)
+                
+                if "Beginner" in player_skill:
+                    cost = 3
+                    max_hints = 5
+                elif "Intermediate" in player_skill:
+                    cost = 5
+                    max_hints = 3
+                else:
+                    cost = 7.5
+                    max_hints = 2
+                    
+                hints_pool = get_hints_pool()
+                print(f"Current Detective Score: {detective_score} pts")
+                print(f"Hints Unlocked: {unlocked_hints_count} / {max_hints}\n")
+                
+                if unlocked_hints_count > 0:
+                    for idx in range(unlocked_hints_count):
+                        print(f"  * Hint {idx+1}: {hints_pool[idx]}")
+                    print()
+                else:
+                    print("  No hints unlocked yet.\n")
+                    
+                # Advanced hidden hint check
+                if "Advanced" in player_skill and len(resolved_contradictions) >= 2:
+                    hidden_hint = OFFLINE_CASES_DB[current_case_index]["hidden_hint"] if not is_ai_case else "A hidden diary entry directly links the killer to the murder weapon. Re-examine the contradictions!"
+                    print(f"\n{YELLOW}{BOLD}[🔒 SPECIAL BONUS HINT UNLOCKED - Task Complete]{RESET}")
+                    print(f"  * Hidden Hint: {hidden_hint}\n")
+                    
+                print("-" * 60)
+                print(f"  [1] Unlock Hint (Costs {cost} pts)")
+                print("  [0] Return to Notebook Menu")
+                
+                hint_sub = input(f"\n{BOLD}Select option:{RESET} ").strip()
+                if hint_sub == "1":
+                    if unlocked_hints_count < max_hints:
+                        if detective_score >= cost:
+                            detective_score -= cost
+                            unlocked_hints_count += 1
+                            print(f"\n{GREEN}Hint unlocked! Costs {cost} pts.{RESET}")
+                            time.sleep(1.5)
+                        else:
+                            print(f"\n{RED}Not enough points to unlock hint!{RESET}")
+                            time.sleep(1.5)
+                    else:
+                        print(f"\n{YELLOW}Maximum hints already unlocked!{RESET}")
+                        time.sleep(1.5)
+                elif hint_sub == "0" or hint_sub == "":
+                    break
+                    
         elif choice == "0" or choice == "":
             break
         else:
@@ -1257,15 +1487,17 @@ def view_clues():
 
 def accuse_killer():
     """Accusation system. Requires correct suspect, weapon, and proof. Exits on execution."""
-    global detective_score
+    global detective_score, accusation_attempts, current_case_index, unlocked_case_index, cumulative_score
     clear_screen()
-    print_banner("FINAL ACCUSATION", RED)
+    print_banner("FINAL ACCUSATION CHAMBER", RED)
+    
     print_wrapped(
-        "WARNING: You are about to present your final case. You must be certain. "
-        "If you accuse the wrong suspect, or lack the correct proof, the killer will "
-        "escape and you will lose the game!"
+        f"WARNING: You are about to make an accusation. Select the Killer, Weapon, and Proof. "
+        f"You have a maximum of 2 attempts. Each incorrect attempt costs -5 points!"
     )
+    print(f"\nAttempts Remaining: {2 - accusation_attempts} / 2")
     print()
+    
     confirm = input("Are you ready to make your accusation? (yes/no): ").strip().lower()
     if confirm != "yes" and confirm != "y":
         return
@@ -1362,7 +1594,7 @@ def accuse_killer():
     print_typewriter("You assemble the suspects in the Library...", 0.02)
     print_typewriter("You clear your throat and announce your findings...", 0.02)
     print(f"\n\"I accuse {BOLD}{SUSPECTS[accused_killer]['name']}{RESET} of the murder!\"")
-    print(f"\"They poisoned {victim_name} using the {BOLD}{CLUES[accused_weapon]['name']}{RESET}!\"")
+    print(f"\"They committed the crime using the {BOLD}{CLUES[accused_weapon]['name']}{RESET}!\"")
     print(f"\"And my proof is the {BOLD}{CLUES[accused_evidence]['name']}{RESET}!\"\n")
     time.sleep(2)
     
@@ -1374,44 +1606,54 @@ def accuse_killer():
             "                                 CASE SOLVED!\n"
             "================================================================================\n"
             f"{SUSPECTS[killer_id]['name']}'s face goes pale as you display the key proof.\n\n"
-            f"\"Fine! Yes, I did it!\" they scream. \"{victim_name} was going to ruin me!\n"
-            f"I used the {CLUES[weapon_clue_id]['name']}. I had no choice!\"\n\n"
+            f"\"Fine! Yes, I did it!\" they scream.\n"
+            f"\"I used the {CLUES[weapon_clue_id]['name']}. I had no choice!\"\n\n"
             "The local police officers rush in and take the killer away in handcuffs.\n"
-            f"Your deduction was flawless. You have solved the secret of Blackwood Manor!\n"
-            f"Final Detective Score: {detective_score} points!\n"
+            f"Your deduction was flawless. You have solved the mystery!\n"
+            f"Current Case Detective Score: {detective_score} points!\n"
             "================================================================================"
         )
         print_typewriter(win_outro, 0.005)
         print_end_game_summary(success=True)
-        input("\nPress Enter to exit the game...")
-        sys.exit(0)
+        
+        cumulative_score += detective_score
+        
+        if current_case_index < 2:
+            print(f"\n{GREEN}Proceeding to the next unlocked case!{RESET}")
+            current_case_index += 1
+            if current_case_index > unlocked_case_index:
+                unlocked_case_index = current_case_index
+            input("\nPress Enter to begin the next case...")
+            initialize_game()
+        else:
+            print(f"\n{GREEN}🏆 CONGRATULATIONS! You have successfully completed the entire campaign!{RESET}")
+            print(f"Final Campaign Cumulative Score: {cumulative_score} points!")
+            input("\nPress Enter to exit the game...")
+            sys.exit(0)
     else:
         play_retro_chime("failure")
         print(f"{RED}{BOLD}YOUR ACCUSATION WAS INCORRECT!{RESET}")
         print("-" * 60)
-        if accused_killer != killer_id:
-            print_wrapped(f"Your accusation of {SUSPECTS[accused_killer]['name']} falls flat. They present a clear alibi and your accusations are laughed off. You arrested an innocent person!")
-        elif accused_weapon != weapon_clue_id:
-            print_wrapped(f"Your suspect sneers. While they are indeed guilty, your description of the murder weapon was incorrect.")
-        else:
-            print_wrapped(f"Your suspect laughs off your charges. 'You have no proof linking me to this!' Indeed, without the key proof, your case is circumstantial and dismissed.")
-        print("-" * 60)
         
-        # Wrong accusation: deduct 10 points if enough points
-        deduct = 0
-        if detective_score >= 10:
-            detective_score -= 10
-            deduct = 10
+        detective_score -= 5
+        accusation_attempts += 1
+        
+        if accusation_attempts >= 2:
+            print_banner("CASE CLOSED - UNSOLVED", RED)
+            print_wrapped("You have run out of accusation attempts! The case has been closed as UNSOLVED.")
+            print("\nCorrect Answers:")
+            print(f"  * Killer: {SUSPECTS[killer_id]['name']}")
+            print(f"  * Weapon: {CLUES[weapon_clue_id]['name']}")
+            print(f"  * Key Proof: {CLUES[proof_clue_id]['name']}")
+            print(f"\nCase Explanation: {case_explanation}")
+            print("\nYou must restart the case with randomized details.")
+            input("\nPress Enter to restart the case...")
+            initialize_game()
         else:
-            detective_score = 0
-            
-        update_difficulty()
-        if deduct > 0:
-            print(f"\n{RED}You lost {deduct} detective points. Keep investigating!{RESET}")
-        else:
-            print(f"\n{RED}Incorrect accusation. (You have 0 points, so no score was deducted). Keep investigating!{RESET}")
-        input("\nPress Enter to return to your investigation...")
-        return
+            print(f"You have 1 attempt remaining. 5 points deducted. Keep investigating!")
+            update_difficulty()
+            input("\nPress Enter to return to your investigation...")
+            return
 
 # ==============================================================================
 # 6. MAIN GAME LOOP
