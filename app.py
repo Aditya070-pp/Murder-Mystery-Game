@@ -843,6 +843,31 @@ if st.session_state.get("unlocked_case_index", 0) > 0 and not st.session_state.g
         init_game_state(force_reset=True)
         st.rerun()
 
+st.sidebar.divider()
+
+# --- HOW TO PLAY GUIDE ---
+with st.sidebar.expander("📖 How to Play Guide", expanded=False):
+    st.markdown("""
+    ### 🎯 Objective
+    Crack the case by correctly identifying three key elements:
+    1. **The Killer:** The suspect with a motive and a broken alibi.
+    2. **The Weapon:** The physical means of murder found in the Study.
+    3. **Key Proof:** The piece of evidence that directly links the killer to the crime scene or plot.
+    
+    Submit your findings in the **Accusation Chamber**. You only have **2 attempts**!
+    
+    ### 🕵️‍♂️ Gameplay Steps
+    1. **Explore Rooms:** Move between connected rooms using the Manor Map or travel buttons under the Explore tab.
+    2. **Search for Clues:** Click **"Search room for clues"** in each room to collect evidence. You must find at least 3 clues to trigger critical plot twists!
+    3. **Interrogate Suspects:** Question suspects on their alibi, motive, secrets, or specific clues you have found.
+    4. **Break Alibis (Contradictions):** Match suspect alibis with physical clues. Ask a suspect about a clue that contradicts their story to break their alibi!
+    5. **Notebook & Hints:** Check the **Case Notebook** tab to review dossiers, floor plans, alibis, and unlock hints by spending points.
+    
+    ### ⚙️ Difficulty & Rules
+    * **Beginner:** Clue indicators on navigation buttons show remaining clues. Hints cost **3 pts** (max 5).
+    * **Intermediate:** Secrets are locked until you collect **2+ clues**. Hints cost **5 pts** (max 3).
+    * **Advanced:** Secrets are locked until you collect **3+ clues**. Asking suspects about other people ends the interrogation! Hints cost **7.5 pts** (max 2).
+    """)
 
 # Detective metrics
 st.sidebar.markdown(f"**Detective Rank:**")
